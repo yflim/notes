@@ -1,18 +1,18 @@
 
 # Table of Contents
 
-1.  [Links](#org8ebd797)
-2.  [Introduction](#org12d3750)
-3.  [Usage](#org8688215)
-4.  [Relationship to Datomic and DataScript](#org0a2eb3e)
-5.  [ClojureScript support](#org553e736)
-6.  [Syntax](#orgb426eab)
-    1.  [Datomic syntax](#org83bbe55)
-    2.  [Invoice example](#org374296b)
+1.  [Links](#orgb362bfb)
+2.  [Introduction](#org4fbcab8)
+3.  [Usage](#orgdc8833b)
+4.  [Relationship to Datomic and DataScript](#orgb626c27)
+5.  [ClojureScript support](#orgc52eab5)
+6.  [Syntax](#orgbf69534)
+    1.  [Datomic syntax](#org20c81af)
+    2.  [Invoice example](#orgfbf7ddb)
 
 
 
-<a id="org8ebd797"></a>
+<a id="orgb362bfb"></a>
 
 # Links
 
@@ -20,7 +20,7 @@
 [GitHub repository](https://github.com/replikativ/datahike)
 
 
-<a id="org12d3750"></a>
+<a id="org4fbcab8"></a>
 
 # Introduction
 
@@ -29,7 +29,7 @@
 -   Building on the two projects and storage backends for the hitchhiker-tree through [konserve](https://github.com/replikativ/konserve).
 
 
-<a id="org8688215"></a>
+<a id="orgdc8833b"></a>
 
 # Usage
 
@@ -41,7 +41,7 @@
 -   The rest of Datahike will be ported to core.async for platform-neutral IO coordination.
 
 
-<a id="org0a2eb3e"></a>
+<a id="orgb626c27"></a>
 
 # Relationship to Datomic and DataScript
 
@@ -60,19 +60,19 @@
     -   Differences with Datomic in the query engine are documented there.
 
 
-<a id="org553e736"></a>
+<a id="orgc52eab5"></a>
 
 # ClojureScript support
 
 -   Work in progress.
 
 
-<a id="orgb426eab"></a>
+<a id="orgbf69534"></a>
 
 # Syntax
 
 
-<a id="org83bbe55"></a>
+<a id="org20c81af"></a>
 
 ## Datomic syntax
 
@@ -80,9 +80,9 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
 [Tutorial](http://www.learndatalogtoday.org/): [Notes](../datomic/notes.md)
 
 
-<a id="org374296b"></a>
+<a id="orgfbf7ddb"></a>
 
-## Invoice example
+## [Invoice example](https://gitlab.com/replikativ/datahike-invoice/-/blob/master/src/datahike_invoice/core.clj)
 
     (ns datahike-invoice.core
       (:require [datahike.api :as d] ...))
@@ -143,34 +143,34 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
     ;; ...]
 
 -   Note the transparently different return types for the following:
+
+    (def customer-all (d/pull @conn '[*] [:customer/name "Little Shop"]))
+    ;; => #'datahike-invoice.core/customer-all
+    customer-all
+    ;; => {:customer/postal "23455",
+    ;; :customer/department "",
+    ;; :customer/name "Little Shop",
+    ;; :customer/city "Heidelberg",
+    ;; :customer/street "Marktplatz 10",
+    ;; :db/id 24,
+    ;; :customer/contact "Herr Schmitt",
+    ;; :customer/offers [#:db{:id 29} #:db{:id 36}],
+    ;; :customer/country "Germany"}
+    (type customer-all)
+    ;; => clojure.lang.PersistentHashMap
+    (keys customer-all)
+    ;; => (:customer/postal
+    ;; ...)
     
-        (def customer-all (d/pull @conn '[*] [:customer/name "Little Shop"]))
-        ;; => #'datahike-invoice.core/customer-all
-        customer-all
-        ;; => {:customer/postal "23455",
-        ;; :customer/department "",
-        ;; :customer/name "Little Shop",
-        ;; :customer/city "Heidelberg",
-        ;; :customer/street "Marktplatz 10",
-        ;; :db/id 24,
-        ;; :customer/contact "Herr Schmitt",
-        ;; :customer/offers [#:db{:id 29} #:db{:id 36}],
-        ;; :customer/country "Germany"}
-        (type customer-all)
-        ;; => clojure.lang.PersistentHashMap
-        (keys customer-all)
-        ;; => (:customer/postal
-        ;; ...)
-        
-        (def customer-specs (d/pull @conn '[:customer/name :customer/country]
-          [:customer/name "Little Shop"]))
-        ;; => #'datahike-invoice.core/customer-specs
-        customer-specs
-        ;; => #:customer{:name "Little Shop", :country "Germany"}
-        (type customer-specs)
-        ;; => clojure.lang.PersistentArrayMap
-        (keys customer-specs)
-        ;; => (:customer/name :customer/country)
+    (def customer-specs (d/pull @conn '[:customer/name :customer/country]
+      [:customer/name "Little Shop"]))
+    ;; => #'datahike-invoice.core/customer-specs
+    customer-specs
+    ;; => #:customer{:name "Little Shop", :country "Germany"}
+    (type customer-specs)
+    ;; => clojure.lang.PersistentArrayMap
+    (keys customer-specs)
+    ;; => (:customer/name :customer/country)
 
 -   Pulling specified nested return value (collection):
 
@@ -236,10 +236,9 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
            [?e :customer/offers ?offer-id]
            [?offer-id :offer/number ?offer-number]]
          @conn offer-num)
-    #+end_src clojure
-    
-    - Selecting / Joining across multiple databases:
-    #+begin_src clojure
+
+-   Selecting / Joining across multiple databases:
+
     (def effort-uri "datahike:file:///tmp/effort-store")
     (d/delete-database effort-uri)
     (d/create-database effort-uri :schema-on-read true :temporal-index false)
