@@ -1,18 +1,20 @@
 
 # Table of Contents
 
-1.  [Links](#orgb362bfb)
-2.  [Introduction](#org4fbcab8)
-3.  [Usage](#orgdc8833b)
-4.  [Relationship to Datomic and DataScript](#orgb626c27)
-5.  [ClojureScript support](#orgc52eab5)
-6.  [Syntax](#orgbf69534)
-    1.  [Datomic syntax](#org20c81af)
-    2.  [Invoice example](#orgfbf7ddb)
+1.  [Links](#org5d1d7ab)
+2.  [Introduction](#orgd3aadbf)
+3.  [Usage](#org034a690)
+4.  [Relationship to Datomic and DataScript](#orgd676295)
+5.  [ClojureScript support](#org26b9014)
+6.  [Syntax](#org094e689)
+    1.  [Datomic syntax](#org3beb1d3)
+    2.  [Invoice example](#orgd712e70)
+7.  [Internals](#orgb7e8e47)
+    1.  [Hitchhiker tree](#org8839af4)
 
 
 
-<a id="orgb362bfb"></a>
+<a id="org5d1d7ab"></a>
 
 # Links
 
@@ -20,7 +22,7 @@
 [GitHub repository](https://github.com/replikativ/datahike)
 
 
-<a id="org4fbcab8"></a>
+<a id="orgd3aadbf"></a>
 
 # Introduction
 
@@ -29,7 +31,7 @@
 -   Building on the two projects and storage backends for the hitchhiker-tree through [konserve](https://github.com/replikativ/konserve).
 
 
-<a id="orgdc8833b"></a>
+<a id="org034a690"></a>
 
 # Usage
 
@@ -41,7 +43,7 @@
 -   The rest of Datahike will be ported to core.async for platform-neutral IO coordination.
 
 
-<a id="orgb626c27"></a>
+<a id="orgd676295"></a>
 
 # Relationship to Datomic and DataScript
 
@@ -60,19 +62,19 @@
     -   Differences with Datomic in the query engine are documented there.
 
 
-<a id="orgc52eab5"></a>
+<a id="org26b9014"></a>
 
 # ClojureScript support
 
 -   Work in progress.
 
 
-<a id="orgbf69534"></a>
+<a id="org094e689"></a>
 
 # Syntax
 
 
-<a id="org20c81af"></a>
+<a id="org3beb1d3"></a>
 
 ## Datomic syntax
 
@@ -80,7 +82,7 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
 [Tutorial](http://www.learndatalogtoday.org/): [Notes](../datomic/notes.md)
 
 
-<a id="orgfbf7ddb"></a>
+<a id="orgd712e70"></a>
 
 ## [Invoice example](https://gitlab.com/replikativ/datahike-invoice/-/blob/master/src/datahike_invoice/core.clj)
 
@@ -142,20 +144,18 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
     ;;       :valueType :db.type/string}
     ;; ...]
 
--   Note the transparently different return types for the following:
+Note the transparently different return types for the following:
 
     (def customer-all (d/pull @conn '[*] [:customer/name "Little Shop"]))
     ;; => #'datahike-invoice.core/customer-all
     customer-all
     ;; => {:customer/postal "23455",
     ;; :customer/department "",
-    ;; :customer/name "Little Shop",
-    ;; :customer/city "Heidelberg",
-    ;; :customer/street "Marktplatz 10",
+    ;; ...
     ;; :db/id 24,
-    ;; :customer/contact "Herr Schmitt",
+    ;; ...
     ;; :customer/offers [#:db{:id 29} #:db{:id 36}],
-    ;; :customer/country "Germany"}
+    ;; ...}
     (type customer-all)
     ;; => clojure.lang.PersistentHashMap
     (keys customer-all)
@@ -172,19 +172,17 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
     (keys customer-specs)
     ;; => (:customer/name :customer/country)
 
--   Pulling specified nested return value (collection):
+Pulling specified nested return value (collection):
 
-    (d/pull @conn '[:customer/name :customer/country
-                    {:customer/offers
-                     [:offer/name :offer/advisor
-                      {:offer/task-groups
-                       [:task-group/name
-                        {:task-group/tasks [{:task/price-unit [*]
-                                             :task/effort-unit [:db/ident]}]
-                          }]}]}]
+    (d/pull @conn '[* {:customer/offers
+                       [:offer/name :offer/advisor
+                        {:offer/task-groups
+                         [:task-group/name
+                          {:task-group/tasks [{:task/price-unit [*]
+                                               :task/effort-unit [:db/ident]}]}]}]}]
           [:customer/name "Little Shop"])
     ;; => #:customer{:name "Little Shop",
-    ;;           :country "Germany",
+    ;;           ...
     ;;           :offers
     ;;           [#:offer{:name "Adjustments App Q2 2019",
     ;;                    :advisor "Konrad Kuehne",
@@ -197,19 +195,9 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
     ;;                                   #:task{:price-unit
     ;;                                          #:db{:id 15, :ident :euro},
     ;;                                          :effort-unit #:db{:ident :hour}}]}]}
-    ;;            #:offer{:name "Adjustments App Q2 2019",
-    ;;                    :advisor "Konrad Kuehne",
-    ;;                    :task-groups
-    ;;                    [#:task-group{:name "Fresh Produce Shop",
-    ;;                                  :tasks
-    ;;                                  [#:task{:price-unit
-    ;;                                          #:db{:id 15, :ident :euro},
-    ;;                                          :effort-unit #:db{:ident :hour}}
-    ;;                                   #:task{:price-unit
-    ;;                                          #:db{:id 15, :ident :euro},
-    ;;                                          :effort-unit #:db{:ident :hour}}]}]}]}
+    ;;            #:offer{...}]}
 
--   Using returned collections:
+Using returned collections:
 
     (def customer-offers (d/pull @conn '[{:customer/offers [:offer/number :offer/name]}]
                                  [:customer/name "Little Shop"]))
@@ -222,7 +210,7 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
     ;; => [#:offer{:number "20211110-01", :name "Adjustments App Q2 2019"}
     ;; #:offer{:number "20211112-01", :name "Adjustments App Q2 2019"}]
 
--   Selecting succinctly&#x2013;the following are equivalent:
+Selecting succinctly&#x2013;the following are equivalent:
 
     (d/q '[:find (pull ?e [*]) .
            :in $ ?offer-id
@@ -237,7 +225,23 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
            [?offer-id :offer/number ?offer-number]]
          @conn offer-num)
 
--   Selecting / Joining across multiple databases:
+Add / Change attribute for existing entity
+
+    ;; Note: in this example and the next, :topic/name is a unique identity attribute
+    (d/transact conn [{:db/id [:topic/name sub]
+                       :topic/parent [:topic/name parent]}])
+    
+    ;; Using reverse attribute name
+    (d/transact conn [{:topic/_urls [:topic/name topic]
+                       :url/url url}])
+    ;; the following are equivalent
+    (transact conn [{:db/id  -1
+                     :name   "Oleg"
+                     :_friend 296}])
+    (transact conn [[:db/add  -1 :name   "Oleg"]
+                    [:db/add 296 :friend -1]])
+
+Selecting / Joining across multiple databases:
 
     (def effort-uri "datahike:file:///tmp/effort-store")
     (d/delete-database effort-uri)
@@ -255,4 +259,22 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
            [$effort ?e :effort/start-date ?sd]]
          @conn
          @effort-conn)
+
+Retracting:
+
+    (d/transact conn [[:db/retractEntity 26]])
+    (d/transact btc/conn [[:db/retract eid :topic/parent {:topic/name parent}]])
+
+
+<a id="orgb7e8e47"></a>
+
+# Internals
+
+
+<a id="org8839af4"></a>
+
+## Hitchhiker tree
+
+-   Lazy inserts (WIP?)
+-   Interning: instead of storing attributes as keywords, map them to integers and use those instead references&#x2014;more efficient internal mapping for constants.
 
