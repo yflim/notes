@@ -1,20 +1,21 @@
 
 # Table of Contents
 
-1.  [Links](#org5d1d7ab)
-2.  [Introduction](#orgd3aadbf)
-3.  [Usage](#org034a690)
-4.  [Relationship to Datomic and DataScript](#orgd676295)
-5.  [ClojureScript support](#org26b9014)
-6.  [Syntax](#org094e689)
-    1.  [Datomic syntax](#org3beb1d3)
-    2.  [Invoice example](#orgd712e70)
-7.  [Internals](#orgb7e8e47)
-    1.  [Hitchhiker tree](#org8839af4)
+1.  [Links](#org5bea079)
+2.  [Introduction](#orga9f6243)
+3.  [Usage](#org5917e60)
+4.  [Relationship to Datomic and DataScript](#org55ce5e8)
+5.  [ClojureScript support](#org088b57f)
+6.  [Syntax](#org01ddbcd)
+    1.  [Datomic syntax](#org972a0e9)
+    2.  [Invoice example](#org4619bfe)
+    3.  [Etc.](#orgfb3b0b2)
+7.  [Internals](#org4b58463)
+    1.  [Hitchhiker tree](#org5c88b2e)
 
 
 
-<a id="org5d1d7ab"></a>
+<a id="org5bea079"></a>
 
 # Links
 
@@ -22,7 +23,7 @@
 [GitHub repository](https://github.com/replikativ/datahike)
 
 
-<a id="orgd3aadbf"></a>
+<a id="orga9f6243"></a>
 
 # Introduction
 
@@ -31,7 +32,7 @@
 -   Building on the two projects and storage backends for the hitchhiker-tree through [konserve](https://github.com/replikativ/konserve).
 
 
-<a id="org034a690"></a>
+<a id="org5917e60"></a>
 
 # Usage
 
@@ -43,7 +44,7 @@
 -   The rest of Datahike will be ported to core.async for platform-neutral IO coordination.
 
 
-<a id="orgd676295"></a>
+<a id="org55ce5e8"></a>
 
 # Relationship to Datomic and DataScript
 
@@ -62,19 +63,19 @@
     -   Differences with Datomic in the query engine are documented there.
 
 
-<a id="org26b9014"></a>
+<a id="org088b57f"></a>
 
 # ClojureScript support
 
 -   Work in progress.
 
 
-<a id="org094e689"></a>
+<a id="org01ddbcd"></a>
 
 # Syntax
 
 
-<a id="org3beb1d3"></a>
+<a id="org972a0e9"></a>
 
 ## Datomic syntax
 
@@ -82,7 +83,7 @@ The syntax of the Datomic dialect of Datalog is virtually identical.
 [Tutorial](http://www.learndatalogtoday.org/): [Notes](../datomic/notes.md)
 
 
-<a id="orgd712e70"></a>
+<a id="org4619bfe"></a>
 
 ## [Invoice example](https://gitlab.com/replikativ/datahike-invoice/-/blob/master/src/datahike_invoice/core.clj)
 
@@ -225,22 +226,6 @@ Selecting succinctly&#x2013;the following are equivalent:
            [?offer-id :offer/number ?offer-number]]
          @conn offer-num)
 
-Add / Change attribute for existing entity
-
-    ;; Note: in this example and the next, :topic/name is a unique identity attribute
-    (d/transact conn [{:db/id [:topic/name sub]
-                       :topic/parent [:topic/name parent]}])
-    
-    ;; Using reverse attribute name
-    (d/transact conn [{:topic/_urls [:topic/name topic]
-                       :url/url url}])
-    ;; the following are equivalent
-    (transact conn [{:db/id  -1
-                     :name   "Oleg"
-                     :_friend 296}])
-    (transact conn [[:db/add  -1 :name   "Oleg"]
-                    [:db/add 296 :friend -1]])
-
 Selecting / Joining across multiple databases:
 
     (def effort-uri "datahike:file:///tmp/effort-store")
@@ -266,12 +251,33 @@ Retracting:
     (d/transact btc/conn [[:db/retract eid :topic/parent {:topic/name parent}]])
 
 
-<a id="orgb7e8e47"></a>
+<a id="orgfb3b0b2"></a>
+
+## Etc.
+
+Add / Change attribute for existing entity
+
+    ;; Note: in this example and the next, :topic/name is a unique identity attribute
+    (d/transact conn [{:db/id [:topic/name sub]
+                       :topic/parent [:topic/name parent]}])
+    
+    ;; Using reverse attribute name
+    (d/transact conn [{:topic/_urls [:topic/name topic]
+                       :url/url url}])
+    ;; the following are equivalent
+    (transact conn [{:db/id  -1
+                     :name   "Oleg"
+                     :_friend 296}])
+    (transact conn [[:db/add  -1 :name   "Oleg"]
+                    [:db/add 296 :friend -1]])
+
+
+<a id="org4b58463"></a>
 
 # Internals
 
 
-<a id="org8839af4"></a>
+<a id="org5c88b2e"></a>
 
 ## Hitchhiker tree
 
