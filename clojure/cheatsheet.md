@@ -1,39 +1,55 @@
 
 # Table of Contents
 
-1.  [Tools](#orgec4bd19)
-2.  [Basics / Miscellanea](#org2131564)
-3.  [Collections](#orga183e19)
-4.  [Sequences](#org4f37cf9)
-5.  [Transient data structures](#orge2ab3ea)
-6.  [Functions beget functions](#org455bcfb)
-7.  [Doing](#orgd4ee44d)
-8.  [Branching](#org455cb75)
-9.  [Macros](#orgd436fdf)
-10. [Namespaces](#org06461f9)
-    1.  [Dependencies](#org9fdf25b)
-11. [Destructuring](#org413ba76)
-    1.  [Sequential destructuring](#orgd7ecdf1)
-    2.  [Associative destructuring](#org030d82e)
-        1.  [Keyword arguments](#org83bd2eb)
-        2.  [Namespaced keywords](#orgc914c0a)
-12. [Abstractions](#org18eafae)
-    1.  [Multimethods](#org30a10c6)
-    2.  [Objects](#orgc227b63)
-13. [State](#orgc6b47f7)
+1.  [Tools](#org57f22ce)
+2.  [Basics / Miscellanea](#orgfc87204)
+    1.  [Help](#orgce09968)
+3.  [Syntax](#org472b274)
+4.  [Collections](#org0a300d8)
+    1.  [walk, pre-walk, post-walk](#org9323c9f)
+5.  [Sequences](#orgfc59096)
+6.  [Transient data structures](#org869315b)
+7.  [Functions beget functions](#org893420c)
+8.  [Doing](#org1fb3836)
+9.  [Branching](#org2056042)
+10. [Macros](#orge5c8e38)
+11. [Namespaces](#org96fbfb0)
+    1.  [Dependencies](#org45b21e4)
+12. [Destructuring](#orgf088053)
+    1.  [Sequential destructuring](#org93166e1)
+    2.  [Associative destructuring](#orga10b1a3)
+        1.  [Keyword arguments](#orgf9c4309)
+        2.  [Namespaced keywords](#org0dd58f2)
+        3.  [Nested maps](#org75bb3ca)
+13. [Abstractions](#org96ef204)
+    1.  [Multimethods](#orgbe1867c)
+    2.  [Objects](#orgbf64971)
+14. [State](#orgc6d12d0)
+15. [Reading clojure characters](#org201dafd)
+    1.  [Symbols and Vars](#org679d3cf)
+    2.  [`^`: Metadata](#orga034dc0)
+16. [IO](#org6317e17)
+17. [Vars and global environment](#orgb4d2c6c)
+18. [Testing](#org51d4242)
+    1.  [Kaocha](#org5a42f7a)
+19. [Web](#org1dc5bee)
+    1.  [clj-http](#org38e035d)
 
 
 
-<a id="orgec4bd19"></a>
+<a id="org57f22ce"></a>
 
 # Tools
 
 -   Find dependency versions:
 
-$ clj -X:deps find-versions :lib clojure.java-time/clojure.java-time
+`$ clj -X:deps find-versions :lib clojure.java-time/clojure.java-time`
+
+-   Run build function, e.g. `$ clj -T:build install`
+-   Create new library: `clojure -Tclj-new lib :name myname/mylib`
 
 
-<a id="org2131564"></a>
+<a id="orgfc87204"></a>
 
 # Basics / Miscellanea
 
@@ -45,6 +61,14 @@ $ clj -X:deps find-versions :lib clojure.java-time/clojure.java-time
         ;; equivalent:
         #(println %)
         ;; positional args: %1, %2, etc.
+
+-   Useful functions:
+    
+    -   `name`: Returns the name String of a string, symbol or keyword, e.g.
+    
+        (name :a)
+        (name "a")
+        (name 'a)
 
 -   Using a main
     
@@ -60,8 +84,51 @@ $ clj -X:deps find-versions :lib clojure.java-time/clojure.java-time
 
 -   `*clojure-version*`
 
+-   `#_` (optionally followed by a space) tells the reader to ignore the next form completely.
+    -   Can be stacked to omit multiple forms
 
-<a id="orga183e19"></a>
+,#+begin<sub>src</sub> clojure
+[1 2 3 #\_ 4 5]
+;; => [1 2 3 5]
+{:a 1, #\_#\_ :b 2, :c 3}
+;; => {:a 1, :c 3}
+\#+end<sub>src</sub>
+
+-   Equality: `=` is a value-based operation, while `identical?` tests whether its arguments are the same object
+
+    (identical? [1] [1])
+    ;; => false
+    (= [1] [1])
+    ;; => true
+
+-   Value of last evaluated expression: `*1`. Analogously, `*2` and `*3` (no higher).
+
+-   Shell commands:
+
+    (require '[clojure.java.shell :as sh])
+    (sh/sh "ls" "-aul")
+
+
+<a id="orgce09968"></a>
+
+## Help
+
+-   Print public vars (including functions) in a namespace: `(dir namespace)`
+-   All namespaces: `(all-ns)`
+-   All public definitions in all currently-loaded namespaces matching regex or stringable thing: `(apropos str-or-pattern)`
+-   View source code for `sym`: `(source sym)`
+
+
+<a id="org472b274"></a>
+
+# Syntax
+
+-   `..`
+    E.g.: `(.. System (getProperties) (get "os.name"))`
+    expands to `(. (. System (getProperties)) (get "os.name"))`
+
+
+<a id="org0a300d8"></a>
 
 # Collections
 
@@ -71,33 +138,6 @@ $ clj -X:deps find-versions :lib clojure.java-time/clojure.java-time
     ;; => [(1 2 3)]
     (vec '(1 2 3))
     ;; => [1 2 3]
-
--   `subvec`: `(subvec v start)` `(subvec v start end)`
-
-    (subvec [1 2 3 4 5 6 7] 2)
-    ;; => [3 4 5 6 7]
-    (subvec [1 2 3 4 5 6 7] 2 4)
-    ;; => [3 4]
-
--   `into`: `(into)`, `(into to)`, `(into to from)`, `(into to xform from)`
-
-Conjoin all items of `from` into `to`, e.g.
-
-    (into (sorted-map) [{:a 1} {:c 3} {:b 2}])
-    ;; => {:a 1, :b 2, :c 3}
-    (into [] {1 2, 3 4})
-    ;; => [[1 2] [3 4]]
-    (into '() [1 2 3])
-    ;; => (3 2 1)
-
--   `zipmap`: `(zipmap keys vals)`
-
-    (zipmap [:a :b :c :d :e] [1 2 3 4 5])
-    ;; {:a 1, :b 2, :c 3, :d 4, :e 5}
-    (zipmap [:a :b :c] [1 2])
-    ;; {:a 1, :b 2}
-    (zipmap [:a :b :c] (repeat nil))
-    ;; {:a nil, :b nil, :c nil}
 
 -   `replace`: `(replace smap)`, `(replace smap coll)`
 
@@ -131,8 +171,42 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
     -   Maintains key order. Linear lookup performance, &ldquo;only suitable for *very small* maps&rdquo;.
     -   Only maintains order when un-&ldquo;modified&rdquo;. Subsequent assoc-ing &ldquo;eventually&rdquo; causes it to &ldquo;become&rdquo; a hash-map.
 
+-   `into`: `(into)`, `(into to)`, `(into to from)`, `(into to xform from)`
 
-<a id="org4f37cf9"></a>
+Conjoin all items of `from` into `to`, e.g.
+
+    (into (sorted-map) [{:a 1} {:c 3} {:b 2}])
+    ;; => {:a 1, :b 2, :c 3}
+    (into [] {1 2, 3 4})
+    ;; => [[1 2] [3 4]]
+    (into '() [1 2 3])
+    ;; => (3 2 1)
+
+-   `reduced`: `(reduced x)` wraps x such that a `reduce` terminates with the value x
+
+-   `subvec`: `(subvec v start)` `(subvec v start end)`
+
+    (subvec [1 2 3 4 5 6 7] 2)
+    ;; => [3 4 5 6 7]
+    (subvec [1 2 3 4 5 6 7] 2 4)
+    ;; => [3 4]
+
+-   `zipmap`: `(zipmap keys vals)`
+
+    (zipmap [:a :b :c :d :e] [1 2 3 4 5])
+    ;; {:a 1, :b 2, :c 3, :d 4, :e 5}
+    (zipmap [:a :b :c] [1 2])
+    ;; {:a 1, :b 2}
+    (zipmap [:a :b :c] (repeat nil))
+    ;; {:a nil, :b nil, :c nil}
+
+
+<a id="org9323c9f"></a>
+
+## TODO walk, pre-walk, post-walk
+
+
+<a id="orgfc59096"></a>
 
 # Sequences
 
@@ -143,8 +217,22 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
     (repeat 5 "x")
     ;; => ("x" "x" "x" "x" "x")
 
+-   `list*`
 
-<a id="orge2ab3ea"></a>
+    (list* 1 2 [3 4])
+    ;; => (1 2 3)
+    ;; Corner cases:
+    (list* nil [1 2])
+    ;; => (nil 1 2)
+    (list* 1 nil)
+    ;; => (1)
+    (list* () [1 2])
+    ;; => (() 1 2)
+    (list* 1 ())
+    ;; => (1)
+
+
+<a id="org869315b"></a>
 
 # Transient data structures
 
@@ -157,7 +245,7 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
 -   Same code structure as functional version: `conj!`, `pop!`, `assoc!`, `dissoc!`, `disj!`
 
 
-<a id="org455bcfb"></a>
+<a id="org893420c"></a>
 
 # Functions beget functions
 
@@ -187,7 +275,7 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
         ;; => 15
 
 
-<a id="orgd4ee44d"></a>
+<a id="org1fb3836"></a>
 
 # Doing
 
@@ -238,7 +326,7 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
     ;; => (nil nil nil)
 
 
-<a id="org455cb75"></a>
+<a id="org2056042"></a>
 
 # Branching
 
@@ -284,7 +372,7 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
     where a clause can take either form:
     `test-constant result-expr`
     `(test-constant1 ... test-constantN)  result-expr`
-    where e is matched against each test-constant in the latter.
+    where e is matched (in constant time, unlike `cond` and `condp`) against each test-constant in the latter. A single default expression can follow the clauses; if none is provided and no clause matches, an IllegalArgumentException is thrown.
     
     -   The test-constants are not evaluated and must be compile-time literals, and need not be quoted.
     -   E.g.
@@ -295,6 +383,12 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
               ((1 2)) "my seq"
               "default"))
         ;;=> "my seq"
+        (let [myseq '(1 2)]
+        (case myseq
+              () "empty seq"
+              '(1 2) "my seq"
+              "default"))
+        ;; => "my seq"
         (let [myvec [1 2]]
           (case myvec
                 [] "empty vec"
@@ -303,7 +397,7 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
         ;;=> "default"
 
 
-<a id="orgd436fdf"></a>
+<a id="orge5c8e38"></a>
 
 # Macros
 
@@ -315,8 +409,16 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
         (some-> {:a 1} :b inc)
         ;; nil
 
+-   Return an expression, e.g.
+    
+        (defmacro ret-export-db [approach-fn conn path]
+          `(~approach-fn @~conn ~path))
+        (ret-export-db export-db-tc conn "/test/path.txt")
+    
+    Invoking `ret-export-db` as above evaluates to `(export-db-tc @conn "/test/path.txt")`
 
-<a id="org06461f9"></a>
+
+<a id="org96fbfb0"></a>
 
 # Namespaces
 
@@ -330,9 +432,14 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
 -   Current namespace: `*ns*`
 -   Remove mapping for symbol from namespace:
     `(ns-unmap 'user 'base-config)` or `(ns-unmap *ns* 'base-config)`
+-   Unalias namespace: `(ns-unalias *ns* 'm)`
+-   Refresh all namespaces:
+    
+        (require '[clojure.tools.namespace.repl :refer [refresh]])
+        (refresh)
 
 
-<a id="org9fdf25b"></a>
+<a id="org45b21e4"></a>
 
 ## Dependencies
 
@@ -359,12 +466,12 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
         Update local dependencies without running `lein install` and restarting REPL every time a change is made
 
 
-<a id="org413ba76"></a>
+<a id="orgf088053"></a>
 
 # Destructuring
 
 
-<a id="orgd7ecdf1"></a>
+<a id="org93166e1"></a>
 
 ## Sequential destructuring
 
@@ -384,7 +491,7 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
     ;; => 10 20 [10 20]
 
 
-<a id="org030d82e"></a>
+<a id="orga10b1a3"></a>
 
 ## Associative destructuring
 
@@ -419,10 +526,13 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
       )
     (let [{{:keys [class weapon]} :joe} multiplayer-game-state]
       (println "Joe is a" class "wielding a" weapon))
+    ; or
+    (let [{:joe/keys [class weapon]} multiplayer-game-state]
+      (println "Joe is a" class "wielding a" weapon))
     ;= Joe is a Ranger wielding a Longbow
 
 
-<a id="org83bd2eb"></a>
+<a id="orgf9c4309"></a>
 
 ### Keyword arguments
 
@@ -445,7 +555,7 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
     ;;val = 12  debug = true  verbose = true
 
 
-<a id="orgc914c0a"></a>
+<a id="org0dd58f2"></a>
 
 ### Namespaced keywords
 
@@ -471,12 +581,31 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
     ;= Franklin is 25
 
 
-<a id="org18eafae"></a>
+<a id="org75bb3ca"></a>
+
+### Nested maps
+
+    (def john-smith {:f-name "John"
+                     :l-name "Smith"
+                     :phone "555-555-5555"
+                     :address {:street "452 Lisp Ln."
+                               :city "Macroville"
+                               :state "Kentucky"
+                               :zip "81321"}
+                     :hobbies ["running" "hiking" "basketball"]
+                     :company "Functional Industries"})
+    (defn print-contact-info
+      [{:keys [f-name l-name phone company]
+        {:keys [street city state zip]} :address
+        [fav-hobby second-hobby] :hobbies}] ...)
+
+
+<a id="org96ef204"></a>
 
 # Abstractions
 
 
-<a id="org30a10c6"></a>
+<a id="orgbe1867c"></a>
 
 ## Multimethods
 
@@ -486,18 +615,18 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
     (do-math :add 1 2)
 
 
-<a id="orgc227b63"></a>
+<a id="orgbf64971"></a>
 
 ## Objects
 
--   Where required: `(require '[clojure.reflect])`
+-   Where required: `(require '[clojure.reflect :refer [reflect]])`
 -   Show methods (and other information) for an object: `(reflect some-obj)`
     Note that only methods directly defined on the object&rsquo;s class are listed.
 -   Show methods (including those inherited) on an object&rsquo;s class:
     `(.getMethods (.getClass (tc/rows some-obj :as-maps)))`
 
 
-<a id="orgc6b47f7"></a>
+<a id="orgc6d12d0"></a>
 
 # State
 
@@ -505,4 +634,145 @@ Note: 1. Also applies to sequences. 2. similarities with and differences from `m
 
 `(atom init-val 0 :validator validator-fn)`
 `(atom init-val {:a 1} :validator validator-fn)`
+
+
+<a id="org201dafd"></a>
+
+# Reading clojure characters
+
+
+<a id="org679d3cf"></a>
+
+## Symbols and Vars
+
+A Symbol (can) references a Var, which holds/represents a value (which may be a function).
+
+-   Symbols
+
+    (defn squared [x] (* x x))  ;; evaluates to a Var
+    ;; => #'user/squared
+    (def n 2)   ; evaluates to a Var
+    ;; => #'user/n
+    (type 'squared)
+    ;; => clojure.lang.Symbol
+    (type 'n)
+    ;; => clojure.lang.Symbol
+    (type 'random-symbol)
+    ;; => clojure.lang.Symbol
+    'squared
+    ;; => squared
+    (symbol "squared")  ;; takes string, keyword, or Var argument
+    ;; => squared
+
+-   Vars
+
+    (resolve 'squared)
+    ;; => #'user/squared
+    (var squared)
+    ;; => #'user/squared
+    #'squared   ;; shorthand
+    ;; => #'user/squared
+    (type (var squared))
+    ;; => clojure.lang.Var
+    squared
+    ;; => #function[user/squared]
+    @(resolve 'squared)
+    ;; => #function[user/squared]
+    (type @(resolve 'squared))
+    ;; => user$squared
+    (@(resolve (symbol "squared")) 2)   ;; Deref (with @) the Var named by the Symbol squared
+    ;; => 4
+    ((resolve (symbol "squared")) 2)    ;; A Var asked to act as a function defers to its value
+    ;; => 4
+
+-   Symbol can be used as a function: it looks itself up in its argument
+    `('foo {'foo 2})` is equivalent to `(get {'foo 2} 'foo)`
+
+-   Gotcha: `(#' sym)`, `(var sym)`, and `(resolve sym)` are **not** equivalent!
+    
+        (defn deref-fn-sym [sym] @#'sym)
+        ;; Syntax error compiling var at ... Unable to resolve var: sym in this context
+        (defn deref-fn-sym [sym] @(var sym))
+        ;; Syntax error compiling var at ... Unable to resolve var: sym in this context
+        (defn deref-fn-sym [sym] @(resolve sym))
+        ;; => #'user/deref-fn-sym
+
+
+<a id="orga034dc0"></a>
+
+## `^`: Metadata
+
+-   A map of values that can be attached to various forms
+-   Provides extra information; can be used for documentation, compilation warnings, typehints, and other features
+
+    (def ^{:debug true} five 5) ;; or the next
+    (def ^:debug five 5) ;; equivalent shorthand
+    (meta #'five)
+    ;; => {:ns #<Namespace user>, :name five, :column 1, :debug true, ...}
+    
+    ;; Metadata is attached to the form that follows it
+    (def m ^:hi [1 2 3])
+    (meta (var m))
+    ;; => {:line 35, :column 8, ... :name m, :ns #namespace[user]}
+    (meta m)
+    ;; => {:hi true}
+    
+    ;; Type hint
+    (def ^Integer five 5)
+    (meta #'five)
+    ;; => {:ns #<Namespace user>, ... :tag java.lang.Integer}
+
+
+<a id="org6317e17"></a>
+
+# IO
+
+-   Read EDN file: `(clojure.edn/read (java.io.PushbackReader. (io/reader "test.edn")))`
+
+
+<a id="orgb4d2c6c"></a>
+
+# Vars and global environment
+
+-   Temporarily redefine var (function in this example):
+
+    (alter-var-root #'datahike.api/connect
+                    (fn [f] (fn [& args] (println "instrumented") (apply f args))))
+
+
+<a id="org51d4242"></a>
+
+# Testing
+
+    (require '[clojure.test :refer [run-tests test-vars]])
+    (require 'foo.bar-test :reload-all)
+    ; for good measure
+    (dir foo.bar-test)
+    (meta #'foo.bar-test/test1)
+    ; run all tests
+    (run-tests 'foo.bar-test)
+    ; run one test
+    (test-vars [#'foo.bar-test/test2])
+
+
+<a id="org5a42f7a"></a>
+
+## Kaocha
+
+`bin/kaocha --focus test.ns`
+`bin/kaocha --fail-fast`
+`bin/kaocha --no-capture-output`
+`bin/kaocha --skip test.ns1 --skip test.ns2`
+
+
+<a id="org1dc5bee"></a>
+
+# Web
+
+
+<a id="org38e035d"></a>
+
+## clj-http
+
+-   debugging: add `:debug true` to request map
 
