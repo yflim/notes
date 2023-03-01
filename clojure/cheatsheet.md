@@ -1,55 +1,58 @@
 
 # Table of Contents
 
-1.  [Tools](#org57f22ce)
-2.  [Basics / Miscellanea](#orgfc87204)
-    1.  [Help](#orgce09968)
-3.  [Syntax](#org472b274)
-4.  [Collections](#org0a300d8)
-    1.  [walk, pre-walk, post-walk](#org9323c9f)
-5.  [Sequences](#orgfc59096)
-6.  [Transient data structures](#org869315b)
-7.  [Functions beget functions](#org893420c)
-8.  [Doing](#org1fb3836)
-9.  [Branching](#org2056042)
-10. [Macros](#orge5c8e38)
-11. [Namespaces](#org96fbfb0)
-    1.  [Dependencies](#org45b21e4)
-12. [Destructuring](#orgf088053)
-    1.  [Sequential destructuring](#org93166e1)
-    2.  [Associative destructuring](#orga10b1a3)
-        1.  [Keyword arguments](#orgf9c4309)
-        2.  [Namespaced keywords](#org0dd58f2)
-        3.  [Nested maps](#org75bb3ca)
-13. [Abstractions](#org96ef204)
-    1.  [Multimethods](#orgbe1867c)
-    2.  [Objects](#orgbf64971)
-14. [State](#orgc6d12d0)
-15. [Reading clojure characters](#org201dafd)
-    1.  [Symbols and Vars](#org679d3cf)
-    2.  [`^`: Metadata](#orga034dc0)
-16. [IO](#org6317e17)
-17. [Vars and global environment](#orgb4d2c6c)
-18. [Testing](#org51d4242)
-    1.  [Kaocha](#org5a42f7a)
-19. [Web](#org1dc5bee)
-    1.  [clj-http](#org38e035d)
+1.  [Tools (CLI)](#orge4c7366)
+2.  [Basics / Miscellanea](#org0fb2620)
+    1.  [Help](#orga9f53cf)
+3.  [Syntax](#org0733572)
+4.  [Collections](#orga0f7baf)
+    1.  [walk, pre-walk, post-walk](#orgb2ff45b)
+5.  [Sequences](#orge8307f1)
+6.  [Transient data structures](#orga854ecf)
+7.  [Functions beget functions](#orgf2f479e)
+8.  [Doing](#org51b5936)
+9.  [Branching](#orgf2dee4d)
+10. [Macros](#orgd367484)
+11. [Namespaces](#org57eb214)
+    1.  [Dependencies](#org897ce31)
+12. [Destructuring](#org0c72d79)
+    1.  [Sequential destructuring](#org963bcb7)
+    2.  [Associative destructuring](#orgc1e78a5)
+        1.  [Keyword arguments](#org2221ab8)
+        2.  [Namespaced keywords](#orgc406965)
+        3.  [Nested maps](#org387aab7)
+13. [Abstractions](#orgf816a76)
+    1.  [Multimethods](#org03e3bfc)
+    2.  [Objects](#orgeb50aea)
+    3.  [Polymorphism](#orge23fe6f)
+14. [State](#org0148837)
+15. [Reading clojure characters](#org8edfbb3)
+    1.  [Symbols and Vars](#orga40ecca)
+    2.  [`^`: Metadata](#org51ad699)
+16. [IO](#org06fb26e)
+17. [Vars and global environment](#orgde774b1)
+18. [Testing](#org35984fe)
+    1.  [Kaocha](#org4a40b18)
+19. [Builds and dependencies](#org90aa30f)
+20. [Web](#orgdf4cc27)
+    1.  [clj-http](#org0fcbc98)
 
 
 
-<a id="org57f22ce"></a>
+<a id="orge4c7366"></a>
 
-# Tools
+# Tools (CLI)
 
 -   Find dependency versions:
 
-`$ clj -X:deps find-versions :lib clojure.java-time/clojure.java-time`
+`clj -X:deps find-versions :lib clojure.java-time/clojure.java-time`
 
--   Run build function, e.g. `$ clj -T:build install`
+-   Write dependency expansion to `trace.edn`: `clj -Strace`
+-   Run build function, e.g. `clj -T:build install`
 -   Create new library: `clojure -Tclj-new lib :name myname/mylib`
 
 
-<a id="orgfc87204"></a>
+<a id="org0fb2620"></a>
 
 # Basics / Miscellanea
 
@@ -109,7 +112,7 @@
     (sh/sh "ls" "-aul")
 
 
-<a id="orgce09968"></a>
+<a id="orga9f53cf"></a>
 
 ## Help
 
@@ -119,7 +122,7 @@
 -   View source code for `sym`: `(source sym)`
 
 
-<a id="org472b274"></a>
+<a id="org0733572"></a>
 
 # Syntax
 
@@ -128,7 +131,7 @@
     expands to `(. (. System (getProperties)) (get "os.name"))`
 
 
-<a id="org0a300d8"></a>
+<a id="orga0f7baf"></a>
 
 # Collections
 
@@ -201,12 +204,12 @@ Conjoin all items of `from` into `to`, e.g.
     ;; {:a nil, :b nil, :c nil}
 
 
-<a id="org9323c9f"></a>
+<a id="orgb2ff45b"></a>
 
 ## TODO walk, pre-walk, post-walk
 
 
-<a id="orgfc59096"></a>
+<a id="orge8307f1"></a>
 
 # Sequences
 
@@ -232,7 +235,7 @@ Conjoin all items of `from` into `to`, e.g.
     ;; => (1)
 
 
-<a id="org869315b"></a>
+<a id="orga854ecf"></a>
 
 # Transient data structures
 
@@ -245,7 +248,7 @@ Conjoin all items of `from` into `to`, e.g.
 -   Same code structure as functional version: `conj!`, `pop!`, `assoc!`, `dissoc!`, `disj!`
 
 
-<a id="org893420c"></a>
+<a id="orgf2f479e"></a>
 
 # Functions beget functions
 
@@ -275,7 +278,7 @@ Conjoin all items of `from` into `to`, e.g.
         ;; => 15
 
 
-<a id="org1fb3836"></a>
+<a id="org51b5936"></a>
 
 # Doing
 
@@ -326,7 +329,7 @@ Conjoin all items of `from` into `to`, e.g.
     ;; => (nil nil nil)
 
 
-<a id="org2056042"></a>
+<a id="orgf2dee4d"></a>
 
 # Branching
 
@@ -397,7 +400,7 @@ Conjoin all items of `from` into `to`, e.g.
         ;;=> "default"
 
 
-<a id="orge5c8e38"></a>
+<a id="orgd367484"></a>
 
 # Macros
 
@@ -418,7 +421,7 @@ Conjoin all items of `from` into `to`, e.g.
     Invoking `ret-export-db` as above evaluates to `(export-db-tc @conn "/test/path.txt")`
 
 
-<a id="org96fbfb0"></a>
+<a id="org57eb214"></a>
 
 # Namespaces
 
@@ -439,7 +442,7 @@ Conjoin all items of `from` into `to`, e.g.
         (refresh)
 
 
-<a id="org45b21e4"></a>
+<a id="org897ce31"></a>
 
 ## Dependencies
 
@@ -466,12 +469,12 @@ Conjoin all items of `from` into `to`, e.g.
         Update local dependencies without running `lein install` and restarting REPL every time a change is made
 
 
-<a id="orgf088053"></a>
+<a id="org0c72d79"></a>
 
 # Destructuring
 
 
-<a id="org93166e1"></a>
+<a id="org963bcb7"></a>
 
 ## Sequential destructuring
 
@@ -491,7 +494,7 @@ Conjoin all items of `from` into `to`, e.g.
     ;; => 10 20 [10 20]
 
 
-<a id="orga10b1a3"></a>
+<a id="orgc1e78a5"></a>
 
 ## Associative destructuring
 
@@ -532,7 +535,7 @@ Conjoin all items of `from` into `to`, e.g.
     ;= Joe is a Ranger wielding a Longbow
 
 
-<a id="orgf9c4309"></a>
+<a id="org2221ab8"></a>
 
 ### Keyword arguments
 
@@ -555,7 +558,7 @@ Conjoin all items of `from` into `to`, e.g.
     ;;val = 12  debug = true  verbose = true
 
 
-<a id="org0dd58f2"></a>
+<a id="orgc406965"></a>
 
 ### Namespaced keywords
 
@@ -581,7 +584,7 @@ Conjoin all items of `from` into `to`, e.g.
     ;= Franklin is 25
 
 
-<a id="org75bb3ca"></a>
+<a id="org387aab7"></a>
 
 ### Nested maps
 
@@ -600,12 +603,12 @@ Conjoin all items of `from` into `to`, e.g.
         [fav-hobby second-hobby] :hobbies}] ...)
 
 
-<a id="org96ef204"></a>
+<a id="orgf816a76"></a>
 
 # Abstractions
 
 
-<a id="orgbe1867c"></a>
+<a id="org03e3bfc"></a>
 
 ## Multimethods
 
@@ -615,7 +618,7 @@ Conjoin all items of `from` into `to`, e.g.
     (do-math :add 1 2)
 
 
-<a id="orgbf64971"></a>
+<a id="orgeb50aea"></a>
 
 ## Objects
 
@@ -626,7 +629,24 @@ Conjoin all items of `from` into `to`, e.g.
     `(.getMethods (.getClass (tc/rows some-obj :as-maps)))`
 
 
-<a id="orgc6d12d0"></a>
+<a id="orge23fe6f"></a>
+
+## Polymorphism
+
+-   Get supertypes (both classes and interfaces) of a given type, e.g.
+    `(supers clojure.lang.PersistentList$EmptyList)`
+    `(supers clojure.lang.PersistentList)`
+-   Test whether `x` is an instance of class `c`: `(instance? c x)`
+-   More general than `instance?`: `(isa? child parent)` or `(isa? hierarchy child parent)`
+    -   Allows relationship established via `derive` as well as Java type inheritance
+-   `derive`: `(derive tag parent)` or `(derive hierarchy tag parent)`
+    where `parent` must be a namespace-qualified symbol or keyword; `child` can be those or a class.
+    E.g.: `(derive ::milk  ::dairy)`
+-   More general version of `supers`: `parents`, which returns `derive` relationships as well
+-   Analogue of `parents`: `descendants`
+
+
+<a id="org0148837"></a>
 
 # State
 
@@ -636,12 +656,12 @@ Conjoin all items of `from` into `to`, e.g.
 `(atom init-val {:a 1} :validator validator-fn)`
 
 
-<a id="org201dafd"></a>
+<a id="org8edfbb3"></a>
 
 # Reading clojure characters
 
 
-<a id="org679d3cf"></a>
+<a id="orga40ecca"></a>
 
 ## Symbols and Vars
 
@@ -688,7 +708,7 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
 -   Symbol can be used as a function: it looks itself up in its argument
     `('foo {'foo 2})` is equivalent to `(get {'foo 2} 'foo)`
 
--   Gotcha: `(#' sym)`, `(var sym)`, and `(resolve sym)` are **not** equivalent!
+-   Careful: `#'sym`, `(var sym)`, and `(resolve sym)` are **not** equivalent!
     
         (defn deref-fn-sym [sym] @#'sym)
         ;; Syntax error compiling var at ... Unable to resolve var: sym in this context
@@ -698,7 +718,7 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
         ;; => #'user/deref-fn-sym
 
 
-<a id="orga034dc0"></a>
+<a id="org51ad699"></a>
 
 ## `^`: Metadata
 
@@ -723,14 +743,14 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
     ;; => {:ns #<Namespace user>, ... :tag java.lang.Integer}
 
 
-<a id="org6317e17"></a>
+<a id="org06fb26e"></a>
 
 # IO
 
 -   Read EDN file: `(clojure.edn/read (java.io.PushbackReader. (io/reader "test.edn")))`
 
 
-<a id="orgb4d2c6c"></a>
+<a id="orgde774b1"></a>
 
 # Vars and global environment
 
@@ -740,7 +760,7 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
                     (fn [f] (fn [& args] (println "instrumented") (apply f args))))
 
 
-<a id="org51d4242"></a>
+<a id="org35984fe"></a>
 
 # Testing
 
@@ -755,7 +775,7 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
     (test-vars [#'foo.bar-test/test2])
 
 
-<a id="org5a42f7a"></a>
+<a id="org4a40b18"></a>
 
 ## Kaocha
 
@@ -765,12 +785,19 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
 `bin/kaocha --skip test.ns1 --skip test.ns2`
 
 
-<a id="org1dc5bee"></a>
+<a id="org90aa30f"></a>
+
+# Builds and dependencies
+
+-   Show contents of jar: `jar tf jar-file`
+
+
+<a id="orgdf4cc27"></a>
 
 # Web
 
 
-<a id="org38e035d"></a>
+<a id="org0fcbc98"></a>
 
 ## clj-http
 
