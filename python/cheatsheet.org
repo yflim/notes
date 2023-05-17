@@ -129,3 +129,219 @@ Draw a plot of two variables with bivariate and univariate graphs (e.g. scatterp
 
 ** Etc.
 - Command palette (listing commands with shortcuts): ~Cmd+Shift+p~
+
+
+* TODO INTEGRATE DUMP FROM WORK CRAPTOP BELOW
+
+* Help
+- View documentation: ~help(fn)~
+- Display the printable representation of an object: ~repr()~
+
+
+* Basics
+#+begin_src python
+import builtins
+something = (0,0)
+match type(something):
+      case builtins.list:
+          print("list")
+      case builtins.tuple:
+          print("tuple")
+#+end_src
+
+* Gotchas
+- Total bullshit: ~list()~ apparently mutates its input when given a map.
+  - When called again on the same variable without doing anything else to the latter in between, returns an empty result
+- WTF???!!!???
+  #+begin_src python
+  None == None
+  # True
+  None != None
+  # False
+  ## BUT!!!
+  pd.Series([None] * 10) != pd.Series([None] * 10)
+  # 0    True
+  # 1    True
+  # 2    True
+  dtype: bool
+  pd.Series([None] * 10) == pd.Series([None] * 10)
+  # 0    False
+  # 1    False
+  # 2    False
+  #+end_src
+
+
+* "Functional programming"
+- Call method on object or module: ~(getattr(obj, attr_name_str))~
+  - E.g.:
+    #+begin_src python
+    (getattr('', 'join'))(['a', 'b', 'c'])
+    #-> 'abc'
+    (getattr(chile1_df[1], 'le')(pd.Timestamp('2022-03-01')) & (chile1_df[0] == 'SOSP')).sum()
+    #-> ...
+    #+end_src
+
+** Keyword arguments & Arbitrary argument lists
+- E.g. ~getattr(df[col], op)(pd.Timestamp(*ts_args, **ts_kwargs))~
+
+** Unpacking argument lists
+- I.e. sort of the reverse of what happens in the preceding section/example, e.g.
+  #+begin_src python
+  args = [3, 6]
+  list(range(*args))
+  #+end_src
+
+
+* Data types
+
+** Collections
+e.g. ~from collections.abc import Collection~
+
+** Type hints
+- Multiple types:
+  #+begin_src python
+  def fn(arg: int | str = ''):
+      return arg
+  #+end_src
+- ~Pandera~ for Pandas (or more general?) type hinting
+
+
+* Modules, packages, oh my!
+
+** Modules
+- A module is a file containing Python definitions and statements.
+  - ~import module~ does not add definitions from ~module~ directly to current namespace
+  - ~from module import ...~ adds definitions directly
+  - ~as~ can also be used with ~from ...~, e.g. ~from module import fn as function~
+
+** Packages
+- A package is a (possibly nested) collection of modules
+- ~__init__.py~ is required to make Python treat the directory as a package
+  - Can be empty, execute init code for the package, or define ~__all__~
+    - ~__all__~ lists module names that should be imported by (the discouraged) ~from package import *~, e.g.
+      ~__all__ = ["echo", "surround", "reverse"]~
+    - if ~__all__~ is not defined, ~from package import *~ runs any init code in, and imports names defined and submodules explicitly loaded by, ~__init__.py~
+
+
+* System environment
+- get pwd: ~os.getcwd()~
+- If a .env file is present in project, ~pipenv shell~ and ~pipenv run~ will automatically load it
+
+* *PSA*
+- ~python<v> -m <command>~ *whenever applicable and in doubt!!!*
+
+* Jupyter
+- Run on WSL: ~python<-v> -m jupyter notebook --no-browser~
+- ~jupyter kernelspec list~
+- ipynb <-> py conversion:
+  ~jupytext --to notebook notebook.py~
+  ~jupytext --to py notebook.ipynb~
+- Add a kernel manually else Jupyter will clobber any existing kernel for any pre-existing venv with the same name (i.e. sane practice): ~python3.11 -m ipykernel install --user --name <non-confusing-name-for-jupyter>~
+
+* NumPy
+- Length of each string in an array: ~np.char.str_len(['python', 'is', 'snake', 'oil'])~
+- Element-wise truth value of ~x1~ and ~x2~: ~np.logical_and(x1, x2)~
+- Reduce: e.g. ~np.logical_and.reduce(df)~ reduces each column of df
+
+* Pandas
+- Merge two dataframes with overlapping index, keeping column values from left DataFrame
+  - Option 1 (assuming date is already set as index): ~df1.combine_first(df2)~
+  - Option 2: ~pd.concat([df1, df2]).drop_duplicates(["date"], keep="first", ignore_index=True)~
+- When in doubt, always ~.values~ instead of losing more perfectly good hours of life to bullshit state-
+  (index-) instead of value-based operations
+- Modify series in place: ~s.update([4,5,6])~
+- Define order for series, e.g. ~df['m'] = pd.Categorical(df['m'], ["March", "April", "Dec"])~
+- Count distinct values:
+  #+begin_src python
+  port_r_df.port_name.nunique()
+  # or
+  port_r_df.groupby(['port_id']).port_name.nunique()
+  #+end_src
+- True if all elements within a series or along a dataframe axis are non-zero, not-empty or not-False, e.g.:
+  - Column-wise values all return true: ~df.all()~
+  - Row-wise values all return true: ~df.all(axis=1)~
+- ~any()~: analogous to ~all()~
+
+
+* Plotting
+- Seaborn boxplot: ~showfliers=False~ to omit outliers
+
+* Mod Cons
+- Reload module (etc.):
+  #+begin_src python
+  from importlib import reload
+  reload(module_name_or_alias)
+  #+end_src
+- Automatic docstring generation in ~sphinx-doc~ Emacs minor mode: ~C-c M-d~
+
+
+* Typing
+- Single dispatch for overloading with single signature
+
+
+* Performance
+- ~timeit~: measure execution time of arbitrary statement
+  - in REPL session, need to set ~globals~ to current set of global vars with ~globals()~
+  - can limit number of executions with ~number~
+  #+begin_src python
+  import timeit
+  timeit.timeit('fibonacci(35)', globals=globals(), number=1)
+  #+end_src
+- ~functools.cache~ caches in memory the result of a function for a (each?) particular set of arguments
+
+
+* Python environment management
+
+** General
+Updating Python on Ubuntu:
+#+begin_src bash
+sudo apt install software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa
+# Adding a repository will usually trigger an update. If not, run manually:
+sudo apt update
+apt list | grep python3.11
+sudo apt install python3.11
+# Check:
+python3.11 --version
+# Create symbolic links to python 3 binaries, e.g.
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+# Choose default:
+sudo update-alternatives --config python3
+#+end_src
+
+ <Global Python / package information: ~python -m site~
+Show user site packages directory: ~python -m site --user-site~
+List user site packages (with versions): ~pip list --user~
+Debian-style package info: ~pip show <pkg>~
+User package installation (which is default, but just to be safe): ~pip install --user <pkg>~
+Upgrade: ~pip install <pkg> -U~
+Uninstall along with sub-dependencies: ~pip-autoremove pkg~
+
+*** Tool to consider when it gets better
+[pigar](https://github.com/damnever/pigar): generates requirements.txt based on imports
+
+** In code
+Package location: ~<pkg>.__path__~
+Module location: ~<module>.__file__~
+
+** Project-specific
+# Steer clear of pipenv, virtualenv, and other snake oils
+Create virtual env: ~python[3] -m venv --system-site-packages [--clear] [--upgrade-deps] .venv~ (clear to overwrite, upgrade-deps to upgrade ~pip~ and ~setuptools~?) or ~virtualenv .venv~
+Activate virtual env: ~source .venv/<bindir>/activate~ or ~[py -m] pipenv shell~
+Install packages from requirements file: ~py -m pip install -r requirements.txt~
+Show available package versions: ~py -m pip install <pkg>==~
+Force reinstall in case of breaking changes, e.g. with ~sqlsnakeoil~: ~pip install --force-reinstall -v "SQLAlchemy==1.4.46"~
+Write (only local) requirements to requirements.txt: ~python -m pip freeze -l~
+Deactivate virtual env: ~exit~ if ~pipenv shell~ used for activation. And on Windows, sorry...?
+Upgrade package: ~pip install <pkg> -U~
+Controlled burn workflow:
+1. Install top-level requirements and keep manual list in e.g. ~requirements-toplevel.txt~
+~pip freeze > requirements.txt~
+2. Whenever an included package is no longer included:
+#+begin_src bash
+pip freeze > uninstall.txt
+pip uninstall -r uninstall.txt
+pip install -r requirements-toplevel.txt
+pip freeze > requirements.txt
+#+end_src
