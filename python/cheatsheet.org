@@ -1,0 +1,131 @@
+#+TITLE: Cheatsheet
+
+* Miscellaneous
+- Help: ~help(module)~, ~help(fn)~
+- Reload module without restarting interpreter:
+  #+begin_src python
+  import importlib
+  importlib.reload(mod)
+  #+end_src
+
+* Packages & Modules
+- Import examples:
+  ~import foo.bar~
+  ~from foo import bar~
+  ~from foo import *~
+- If __init.py__ is present in a package directory, it is invoked when the package or a module in the package is imported.
+- Subpackages e.g.:
+  ~import pkg.sub_pkg1.mod1~
+  ~from pkg.sub_pkg2 import mod3~
+
+
+* System utils
+#+begin_src python
+import os
+
+# Run Unix shell commands
+os.system('ls')
+
+# List files in directory
+for f in os.listdir('data'):
+    if isfile(f'data/{f}'):
+        print(f)
+#+end_src
+
+
+* Types
+- Check type: ~isinstance(x, str)~
+
+
+* Data
+
+** Pandas
+
+- Sorting: ~sort_index~, ~sort_values~
+
+- Trim df or series values at lower or upper threshold (like min() or max()):
+~df.clip(lower=None, upper=None, axis=None, inplace=False, *args, **kwargs)~
+
+- Cumulative max/min over df or series axis:
+~df.cummax(axis=None, skipna=True, *args, **kwargs)~
+
+- Drop specified labels from rows or columns (rows in example):
+~test_dataset = dataset.drop(train_dataset.index)~
+
+- Drop column from dataframe:
+~train_labels = train_features.pop('MPG')~
+
+- Drop NaNs from Series or Dataframe:
+~df.dropna(axis=0, how='any', thresh=None, subset=None, inplace=False)~
+
+- Return whether any element is True in Series or Dataframe:
+~df.any(axis=0, bool_only=None, skipna=True, level=None, **kwargs)~
+
+- Sample randomly from dataframe:
+~train_dataset = dataset.sample(frac=0.8, random_state=0)~
+
+- Negation: ~\~~, e.g. ~\~a.isin(b)~
+
+- Multi-indexes:
+  - Returns Series with index levels route_id, trip_id
+    ~route_trip_stop_counts = stop_times.groupby('route_id').trip_id.value_counts()~
+  - Get index level values:
+    ~route_trip_stop_counts.index.get_level_values(0)~
+  - Drop index level 1 i.e. trip_id, then get get variance for each route_id:
+    ~route_trip_stop_counts.droplevel(1).groupby('route_id').var()~
+  - Reset index:
+    - Get df with columns route_id, trip_id in place of the original index:
+       ~route_trip_stop_counts.rename('stop_count').reset_index()~
+    - Get df with route_id as index and additional column trip_id:
+       ~route_trip_stop_counts.rename('stop_count').reset_index(level='trip_id')~
+
+** TODO virtual env, etc.
+- Groupby
+  - ~df.groupby('A')~ is just syntactic sugar for ~df.groupby(df['A'])~
+  #+begin_src python
+  import pandas as pd
+
+  df = pd.DataFrame(
+    [
+        ("bird", "Falconiformes", 389.0),
+        ("bird", "Psittaciformes", 24.0),
+        ("mammal", "Carnivora", 80.2),
+        ("mammal", "Primates", np.nan),
+        ("mammal", "Carnivora", 58),
+    ],
+    index=["falcon", "parrot", "lion", "monkey", "leopard"],
+    columns=("class", "order", "max_speed"))
+  return df
+  # default is axis=0
+  grouped = df.groupby("class")
+  grouped = df.groupby("order", axis="columns")
+  grouped = df.groupby(["class", "order"])
+  #+end_src
+
+  #+RESULTS:
+
+- [[https://pandas.pydata.org/docs/user_guide/window.html][Windowing API]]
+- [[https://pandas.pydata.org/docs/user_guide/timeseries.html#resampling][Resampling API]]
+
+
+* Visualisation
+
+** Seaborn
+
+Draw a plot of two variables with bivariate and univariate graphs (e.g. scatterplot with histograms):
+~sns.jointplot(data=df, x='x', y='y')~
+
+
+* Jupyter
+
+** Help
+- Function help: inside parentheses, hit ~Shift+Tab~
+
+** Editing
+- Change cell type: to markdown ~m~, to code ~y~
+- Clear cell output: ~Ctrl+o~
+- Indent ~Cmd+]~
+- Dedent ~Cmd+[~
+
+** Etc.
+- Command palette (listing commands with shortcuts): ~Cmd+Shift+p~
