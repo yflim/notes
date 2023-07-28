@@ -1,0 +1,11 @@
+Push as user: ~git push https://yflim@github.com/yflim/notes.git~
+
+Find last commit that affected a given filepath: ~git rev-list -n 1 HEAD -- <file_path>~
+
+Check out remote branch:
+~git switch remote_br~
+
+Check out last version of deleted file:
+~git checkout <deleting_commit>^ -- <file_path>~
+Or, in one command:
+~git checkout $(git rev-list -n 1 HEAD -- "$file")^ -- "$file"~
