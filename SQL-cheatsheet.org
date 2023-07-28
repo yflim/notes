@@ -1,0 +1,33 @@
+* Select distinct
+#+begin_src sql
+SELECT DISTINCT ON (np) np FROM seaspanltd.operation_reports;
+#+end_src
+
+* Date comparison
+#+begin_src sql
+SELECT COUNT(np) FROM seaspanltd.operation_reports
+WHERE gmt > '2021-12-31'
+#+end_src
+
+* Regular expression
+- Match
+#+begin_src sql
+SELECT np FROM seaspanltd.operation_reports
+WHERE np ~ '\s$';
+#+end_src
+  - Case-insensitive
+    #+begin_src sql
+    SELECT np FROM seaspanltd.operation_reports
+    WHERE np ~* '\s$';
+    #+end_src
+- Inverse match
+#+begin_src sql
+SELECT np FROM seaspanltd.operation_reports
+WHERE np !~ '\s$';
+#+end_src
+
+* Null
+#+begin_src sql
+SELECT COUNT(*) FROM seaspanltd.operation_reports
+WHERE np IS NULL;
+#+end_src
