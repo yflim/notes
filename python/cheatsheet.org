@@ -1,5 +1,22 @@
 #+TITLE: Cheatsheet
 
+
+* Basics
+- Integer division: ~//~ e.g. ~7 // 5~ => ~1~
+
+
+* Flow control
+#+begin_src python
+import builtins
+something = (0,0)
+match type(something):
+      case builtins.list:
+          print("list")
+      case builtins.tuple:
+          print("tuple")
+#+end_src
+
+
 * Miscellaneous
 - Help: ~help(module)~, ~help(fn)~
 - Reload module without restarting interpreter:
@@ -41,6 +58,10 @@ for f in os.listdir('data'):
 
 ** Pandas
 
+- Count ~groupby~ group size: ~size()~
+
+- Replace: ~Series.replace(from, to)~, ~DataFrame.replace(from, to)~
+
 - Sorting: ~sort_index~, ~sort_values~
 
 - Trim df or series values at lower or upper threshold (like min() or max()):
@@ -78,6 +99,24 @@ for f in os.listdir('data'):
        ~route_trip_stop_counts.rename('stop_count').reset_index()~
     - Get df with route_id as index and additional column trip_id:
        ~route_trip_stop_counts.rename('stop_count').reset_index(level='trip_id')~
+
+*** Datetime
+
+- Null value for NumPy and Pandas datetime types, ~np.datetime64('NaT')~, ~np.datetime64('NaT')~ etc., can be set as ~np.nan~
+  - But if used on init, this results in type Object; use the proper expression for a datetime type
+
+**** Conversions
+
+- ~Timedelta Series~, ~TimedeltaIndex~, and ~Timedelta~ can be converted to other supported frequencies (“s”, “ms”, “us”, “ns”) by astyping to a specific timedelta dtype, e.g.:
+  ~td.astype("timedelta64[s]")~
+  - Note that this is equivalent to floor division
+
+- For other resolutions:
+  - Divide by another timedelta object, e.g.: ~td / np.timedelta64(1, "D")~
+  - Floor division by another timedelta object, e.g.: ~td // pd.Timedelta(days=3, hours=4)~
+  - Modulo (~%~) and ~divmod~ are also defined on timedelta operators
+
+  
 
 ** TODO virtual env, etc.
 - Groupby
@@ -137,17 +176,6 @@ Draw a plot of two variables with bivariate and univariate graphs (e.g. scatterp
 - View documentation: ~help(fn)~
 - Display the printable representation of an object: ~repr()~
 
-
-* Basics
-#+begin_src python
-import builtins
-something = (0,0)
-match type(something):
-      case builtins.list:
-          print("list")
-      case builtins.tuple:
-          print("tuple")
-#+end_src
 
 * Gotchas
 - Total bullshit: ~list()~ apparently mutates its input when given a map.
