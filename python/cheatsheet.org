@@ -151,9 +151,72 @@ for f in os.listdir('data'):
 
 ** Seaborn
 
-Draw a plot of two variables with bivariate and univariate graphs (e.g. scatterplot with histograms):
+- Draw a plot of two variables with bivariate and univariate graphs (e.g. scatterplot with histograms):
 ~sns.jointplot(data=df, x='x', y='y')~
+- Hide legend:
+  #+begin_src python
+  ax = sns.pairplot(...)
+  ax.legend_.remove()
+  #+end_src
 
+** Colours
+https://matplotlib.org/stable/tutorials/colors/colormaps.html
+https://matplotlib.org/stable/gallery/color/colormap_reference.html
+https://matplotlib.org/stable/api/colors_api.html
+
+** TODO Stuff
+#+begin_src python
+voyages_gpby_ets_ports = ets_port_reports_2017_to_2022.groupby(PORT_NAME)
+ets_port_eosp_to_unberth_medians = voyages_gpby_ets_ports.eosp_to_unberth_hours.median()
+ets_port_eosp_to_unberth_maxs = voyages_gpby_ets_ports.eosp_to_unberth_hours.max()
+ets_port_outlier_counts = voyages_gpby_ets_ports.eosp_to_unberth_outlier.sum()
+
+ax = sns.boxplot(filter_top_n_port_names(ets_port_reports_2017_to_2022, 15),
+                                  x='pn', y='eosp_to_unberth_hours',
+                                  order=ets_port_calls.index[:15], showfliers=False)
+ax2 = ax.twinx()
+sns.lineplot((ets_port_eosp_to_unberth_maxs[ets_port_calls.index[:15]]
+                            .to_frame().reset_index().rename(columns={'eosp_to_unberth_hours': 'max EOSP-to-unberth hours'})),
+                          ax=ax2, markers=True)
+ax.set_title('EOSP to unberth times: top 15 ETS-zone ports by # calls, 2017-2022', size=18)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=45, size=13)
+ax.set_yticklabels(ax.get_yticklabels(), size=13)
+ax.set_xlabel('')
+ax.set_ylabel(f'{EOSP_TO_UNBERTH_STR}', size=14)
+ax2.set_yticklabels(ax2.get_yticklabels(), size=13)
+ax2.set_ylabel('max EOSP-to-unberth hours', size=14)
+nobs = [f'n: {n}' for n in ets_port_calls.iloc[:15].values.tolist()]
+noutliers = [f'outliers: {n}' for n in ets_port_outlier_counts[ets_port_calls.index[:15]].values.tolist()]
+pos = range(len(nobs))
+for tick, label in zip(pos, ax.get_xticklabels()):
+        ax.text(pos[tick],
+                            ets_port_eosp_to_unberth_medians[ets_port_calls.index[:15]][tick] + 1,
+                            nobs[tick], horizontalalignment='center', size=12, color='w', weight='semibold')
+            ax.text(pos[tick],
+                                ets_port_eosp_to_unberth_medians[ets_port_calls.index[:15]][tick] - 2,
+                                noutliers[tick], horizontalalignment='center', size=12, color='w', weight='semibold')
+            plt.gcf().set_size_inches(27, 18)
+            plt.savefig('../figures/eosp-to-unberth-top-15.png', format='png')
+
+del voyages_gpby_ets_ports, ets_port_eosp_to_unberth_medians, ets_port_eosp_to_unberth_maxs, ets_port_outlier_counts
+del ax, ax2, nobs, noutliers, pos]
+#+end_src
+
+- Stacked bar plot totalling 100%
+#+begin_src python
+ax = sns.histplot(data=voyages_2017_to_2022_ets, x='eosp_to_unberth_bin', hue='year', stat='proportion',
+                                    multiple='fill', discrete=True, shrink=0.8, palette=sns.color_palette('mako'))
+#ax.set_title('EOSP-to-unberth distributions over years 2018 to 2022')
+ax.set_xlabel('EOSP-to-unberth percentile ranges')
+ax.set_ylabel('Proportion')
+plt.savefig('../figures/eosp-to-unberth-bin-years-distributions_2018-2022.png', format='png')
+#+end_src
+
+~plt.gcf().set_size_inches(12, 11)~
+
+
+** TODO I am legend
+~ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1.2), fontsize=7)~
 
 * Jupyter
 
