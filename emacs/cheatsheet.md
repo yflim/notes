@@ -1,62 +1,73 @@
 
 # Table of Contents
 
-1.  [Evaluating Emacs-Lisp](#orge6b6611)
-2.  [Editing](#org176a681)
-    1.  [Select at point](#orgc2083e0)
-    2.  [Project search ex commands](#orgd05ef2e)
-    3.  [Project search and replace](#org36fd84c)
-    4.  [Miscellaneous](#org78d62f5)
-3.  [Modes](#org7b99f97)
-4.  [Org-mode](#org920a708):emacs:org_mode:
-    1.  [Tables](#org898c972)
-5.  [Navigation](#orga35b8a7)
-6.  [Cider](#org47523d2)
-    1.  [Debugger](#org8f0bbf4)
-7.  [Files](#org24c534a)
-8.  [Dired](#orgbe481ca)
-9.  [Buffers](#org04f6deb)
-10. [Windows](#org33bd02d)
-11. [Environment](#orge0e255a)
-12. [Help](#orgd6fd58d)
-13. [Basics](#org713d313)
-14. [map cider-repl-history-search-backward (in cider-repl-history-mode)?](#orgfa0ecc3)
+1.  [Evaluating Emacs-Lisp](#org9ba1342)
+2.  [Editing](#org246273d)
+    1.  [Selecting](#org973dea7)
+    2.  [Project search](#org68502c0)
+    3.  [Project search and replace](#org0284235)
+    4.  [Miscellaneous](#orga94733f)
+3.  [Modes](#org14b4edd)
+4.  [Org-mode](#org79a0851)
+    1.  [Tables](#org6e071c6)
+    2.  [Org roam](#org53bbea6)
+5.  [Navigation](#org430504f)
+6.  [Cider](#org50cc42e)
+    1.  [Debugger](#org1264937)
+7.  [Files](#org64480f3)
+8.  [Dired](#orgbf64bee)
+9.  [Buffers](#orgcb88473)
+10. [Windows](#org2cc21d0)
+11. [Environment](#org916146e)
+12. [Help](#org6da04cc)
+13. [Search, query, and replace](#orgbc66a5a)
+    1.  [rg: Emacs UI for ripgrep](#org4e41be1)
+        1.  [`rg` search & replace example:](#orgfc119a7)
+14. [Basics](#orga186620)
+15. [In case of emergency](#orgdca67bf)
+16. [Doom](#orgace697c)
+17. [Maybe useful someday](#org74b7ac8)
+18. [map cider-repl-history-search-backward (in cider-repl-history-mode)?](#orgbaff003)
 
 **Note:** *M-x and SPC : interchangeable in most or all cases*
 
 
-<a id="orge6b6611"></a>
+<a id="org9ba1342"></a>
 
 # Evaluating Emacs-Lisp
 
 -   Read 1 expr in minibuffer, eval, print val in echo area: `SPC ;`
--   Eval expr before point, print val [in echo area?]: `SPC C-e`
+-   Eval expr before point, print val [in echo area?]: `SPC m e e`
 
 
-<a id="org176a681"></a>
+<a id="org246273d"></a>
 
 # Editing
 
 
-<a id="orgc2083e0"></a>
+<a id="org973dea7"></a>
 
-## Select at point
+## Selecting
 
--   Word: `viw`
--   Block (by indentation): `vii`
--   Block (by braces): `vib`
--   Sentence: `vis`
--   Paragraph: `vip`
+-   At point
+    -   Word: `viw`
+    -   Block (by indentation): `vii`
+    -   Block (by braces): `vib`
+    -   Sentence: `vis`
+    -   Paragraph: `vip`
+
+-   Entire buffer: `C-x h`
 
 
-<a id="orgd05ef2e"></a>
+<a id="org68502c0"></a>
 
-## Project search ex commands
+## Project search
 
 -   Search project (if !, include hidden files): `:pg[!] <query>`
+-   `rg`
 
 
-<a id="org36fd84c"></a>
+<a id="org0284235"></a>
 
 ## Project search and replace
 
@@ -66,31 +77,32 @@
 -   Search another directory: `SPC s D`
 
 
-<a id="org78d62f5"></a>
+<a id="orga94733f"></a>
 
 ## Miscellaneous
 
 -   String search (necessary in `cider-repl-history`): `SPC s s`
 -   `insert-char`: `Ctrl+x 8 RET`
     -   E.g. zero-width space to escape special chars
+-   Paste from register: `Ctrl-r p` (*r* for register)
+-   Reindent selected region: `C-M-\`
 
 
-<a id="org7b99f97"></a>
+<a id="org14b4edd"></a>
 
 # Modes
 
 -   Activate e.g.: M-x org-mode
 
 
-<a id="org920a708"></a>
+<a id="org79a0851"></a>
 
-# Org-mode     :emacs:org_mode:
+# Org-mode
 
--   Tag heading: see example right above
-
--   Expand / Collapse: `shift`
--   Indent heading: `tab`
-    -   Decrease indent: `shift-tab`
+-   Toggle expand / collapse current section:
+    1.  Go to previous visible heading: `C-c C-p`
+    2.  `tab` on heading asterisk
+-   Cycle through expanding / collapsing all sections (maximal expansion is followed by collapsing all): `shift-tab`
 -   Add list item: `M-RET`
 
 -   **Bold**, *italics*, <span class="underline">underline</span>, <del>strikethrough</del>
@@ -103,19 +115,48 @@
     -   Add backend to `org-export-backends` if necessary.
     -   Export e.g. `M-x org-md-export-to-markdown`. The exported file should be in the same directory.
 
--   Init code block: type `<s-tab`
--   Exec code block: `ret`
-    
-        cd ~
-        ls
+-   Code block
+    -   Init: type `<s-tab`
+    -   Exec: `ret`
+        
+        -   sh example:
+        
+            cd ~
+            ls
+        
+        -   elisp example:
+        
+            (format "hi there")
+        
+        -   python example: prints return value by default; remove `:results output` to restore.
+        
+            print("hello")
+    -   Pop up buffer with code: `Ctrl-c '`
+    -   Session
+        
+            v = 1 + 2
+        
+            print(v)
+        
+        -   Or set property: &#x2026; incomplete or doesn&rsquo;t work!!!
+            
+            :header-args: :session py2
+            
+                v = 1 + 2
+            
+                print(v)
+            
+                sum(range(5))
+        
+        -   Name block for referencing:
+            
+                def sum_range(n):
+                    sum(range(n))
 
-    (format "hi there")
-
-    v = 1 + 2
-    return v
+    hello
 
 
-<a id="org898c972"></a>
+<a id="org6e071c6"></a>
 
 ## Tables
 
@@ -188,54 +229,66 @@
         </table>
 
 
-<a id="orga35b8a7"></a>
+<a id="org53bbea6"></a>
+
+## Org roam
+
+-   Select or create node: `org-roam-node-find`
+
+-   Tag heading: see example right above
+
+
+<a id="org430504f"></a>
 
 # Navigation
 
--   Switch to buffer SPC <
--   Switch (toggle) buffer: `Ctrl+x O`
--   Switch to REPL buffer: `Ctrl+x p`
--   Jump to file in project (helm-projectile-find-file): SPC SPC
-    -   To first refresh: SPC u SPC SPC
--   Open recent file (helm/workspace-mini): SPC ,
--   Find files in private config: SPC f p
--   Find files in project: SPC p f
--   helm-find-files: SPC .
--   helm-refresh: C-c C-u (helm-map)
--   Switch project: SPC p p
--   Toggle file explorer: SPC o p
--   Open recent file in any project: SPC f r
--   Open recent file in current project: SPC f R
+-   Switch to buffer `SPC <`
+-   Switch (toggle) buffer: `C-x O`
+-   Switch to REPL buffer: `C-x p`
+-   Previous buffer (within same window): `C-x <left>`
+-   Jump to file in project (helm-projectile-find-file): `SPC SPC`
+    -   To first refresh: `SPC u SPC SPC`
+-   Open recent file (helm/workspace-mini): `SPC ,`
+-   Find files in private config: `SPC f p`
+-   Find files in project: `SPC p f`
+-   helm-find-files: `SPC .`
+-   helm-refresh: `C-c C-u` (helm-map)
+-   Switch project: `SPC p p`
+-   Toggle file explorer: `SPC o p`
+-   Open recent file in any project: `SPC f r`
+-   Open recent file in current project: `SPC f R`
 
 
-<a id="org47523d2"></a>
+<a id="org50cc42e"></a>
 
 # Cider
 
+-   `cider-inspector-next-page`: `C-j`
+    -   previous page: `C-k`
 -   History: `C-c M-p` (`cider-repl-history`)
--   Evaluate expression: SPC m e e
--   Evaluate region: SPC m e r
+-   Evaluate expression: `SPC m e e`
+-   Evaluate region: `SPC m e r`
 -   Comment section for inline evaluation, e.g.:
     
         (comment
           (js/Date.)
           (:all-messages (make-mailbox)))
--   M-x cider-jack-in-clj: SPC m &rsquo;
--   M-x cider-jack-in-cljs: SPC m &ldquo;
--   M-x cider-connect: SPC m c
--   Toggle between Clojure[Script] buffer and REPL: C-c C-z
--   Look up definition: M-.
--   Look up documentation: C-c C-d C-d (cider-mode-map), SPC m h d (clojure-mode-map)
--   Public symbols apropos: C-c C-d a
--   Documentation apropos: C-c C-d f
--   cider-repl-set-ns: SPC m n
--   cider-doc: SPC m h d
--   Show references to fn. at point: C-c C-? r
--   Reload modified and unloaded namespaces on classpath: cider-ns-refresh.
-    -   cider-repl-mode SPC m r, clojure-mode SPC m r r
+-   `M-x cider-jack-in-clj`: `SPC m '`
+-   `M-x cider-jack-in-cljs`: `SPC m "`
+-   `M-x cider-connect`: `SPC m c`
+-   Toggle between Clojure[Script] buffer and REPL: `C-c C-z`
+-   Look up definition: `M-.`
+-   Look up documentation: `C-c C-d C-d` (cider-mode-map), `SPC m h d` (clojure-mode-map)
+-   Public symbols apropos: `C-c C-d a`
+-   Documentation apropos: `C-c C-d f`
+-   `cider-repl-set-~ns: ~SPC m n`
+-   `cider-doc: ~SPC ~m h d`
+-   Show references to fn. at point: `C-c C-? r`
+-   Reload modified and unloaded namespaces on classpath: `cider-ns-refresh`.
+    -   cider-repl-mode `SPC m r`, clojure-mode `SPC m r r`
 
 
-<a id="org8f0bbf4"></a>
+<a id="org1264937"></a>
 
 ## Debugger
 
@@ -245,7 +298,7 @@
     -   Remove instrumentation by evlauating normally again, using `cider-eval-defun-at-point`
 
 
-<a id="org24c534a"></a>
+<a id="org64480f3"></a>
 
 # Files
 
@@ -253,7 +306,7 @@
 -   Delete file: `SPC f D`
 
 
-<a id="orgbe481ca"></a>
+<a id="orgbf64bee"></a>
 
 # Dired
 
@@ -270,7 +323,7 @@
 -   Move selected: `R`
 
 
-<a id="org04f6deb"></a>
+<a id="orgcb88473"></a>
 
 # Buffers
 
@@ -282,7 +335,7 @@
     -   Execute deletion (after preceding keystrokes): `x`
 
 
-<a id="org33bd02d"></a>
+<a id="org2cc21d0"></a>
 
 # Windows
 
@@ -291,7 +344,7 @@
 -   Enable line numbers: M-x linum-mode
 
 
-<a id="orge0e255a"></a>
+<a id="org916146e"></a>
 
 # Environment
 
@@ -300,11 +353,11 @@
 -   List and display docs of current major and minor modes: `C-h m`
 -   Effect changes in .doom.d/init.el:
 
-$ doom sync
+$ `doom sync`
 In Emacs: M-x doom/reload i.e. `SPC h r r`
 
 
-<a id="orgd6fd58d"></a>
+<a id="org6da04cc"></a>
 
 # Help
 
@@ -312,21 +365,106 @@ In Emacs: M-x doom/reload i.e. `SPC h r r`
 -   Describe key sequence in current context: SPC h k
 -   Show help for known fn: M-x <fn-name>
 -   Describe fn: SPC h f <fn-name>
+-   Find source of Emacs command: `M-x find-function RET fn-name`
 -   See all keybindings for a major mode: SPC h b f
 -   See all keybindings available in a buffer, in order of precedence (describe-bindings): SPC h b b
 -   Functions and variables related to search terms: M-x apropos <term[s]> / C-x c a
 -   Find man page: C-x c m
 -   Display elisp function documentation: C-h f fn RET
+-   Go to module&rsquo;s documentation: `M-x doom/help-modules` or `SPC h d m`
 
 
-<a id="org713d313"></a>
+<a id="orgbc66a5a"></a>
+
+# Search, query, and replace
+
+-   org query language: [org-ql](https://github.com/alphapapa/org-ql)
+-   Search and replace tools: `query-replace`, `multiple-cursors.el`, `iedit`, etc.
+
+
+<a id="org4e41be1"></a>
+
+## [rg](https://github.com/dajva/rg.el): Emacs UI for [ripgrep](https://github.com/BurntSushi/ripgrep)
+
+`*rg*` (results) buffer keybindings, defined in `rg-mode-map`:
+
+-   `n`, `next-error-no-select`: move to the next line with a match, show that file in other buffer and highlight the match
+-   `p`, `previous-error-no-select`: ditto with the previous line with a match
+-   `f`, `rg-rerun-change-files`
+-   `r`, `rg-rerun-change-regexp`
+-   go backward and forward in search history:
+    -   `C-c <`, `rg-forward-history`
+    -   `C-c >`, `rg-back-history`
+-   `m`, `rg-menu`: pops up a menu
+    -   E.g.: To use flag `--context` or `-C` for including lines before & after each match:
+        -   hit `m`, then `-C`
+        -   when the minibuffer displays `--context=`, hit `2` and `RET`
+        -   hit `g` for `rg-recompile`
+-   Bonus: with `org-mode`, e.g.
+    ~ If you try to open the following org link (in a `org-mode` buffer), Emacs will request confirmation to execute it:
+    `[[elisp:(rg-run "\\(defmacro with" "subr.el" "/tmp/emacs/" nil nil '("--context=2"))]]`
+    If yes, Emacs runs a search and displays results in `*rg*`
+
+
+<a id="orgfc119a7"></a>
+
+### `rg` search & replace example:
+
+-   Suppose we want `org-link-expand-abbrev` -> `org-link-RENAMED`
+-   Search for the former, then in `*rg*`:
+    -   Hit `e` for `wgrep-change-to-wgrep-mode`; the following happen:
+        -   the matched lines are now editable in `*rg*`
+        -   the keymap `wgrep-mode-map` becomes the local map
+    -   Replace to heart&rsquo;s content
+    -   Abort! Abort! `C-c C-k` for `wgrep-abort-changes`
+    -   Which reverts the changes and `*rg*` to &ldquo;normal&rdquo;
+    -   Note that until we explicitly run a command e.g. `wgrep-abort-changes` of `wgrep` package,
+        nothing is reflected in the filesystem (nor in new file buffers)
+    -   Hit `e` again, and edit
+    -   To save changes in `*rg*`: `C-x C-s` `wgrep-finish-edit`
+    -   `*rg*` is &ldquo;normal&rdquo; (not editable) again, and:
+        -   The changes are visible *but not saved* in the corresponding file buffers
+        -   Can be undone manually
+    -   To save to file system: `M-x wgrep-save-all-buffers`
+    -   To save automatically on `wgrep-finish-edit`:
+        `(setq wgrep-auto-save-buffer t)`
+
+
+<a id="orga186620"></a>
 
 # Basics
 
--   Doom equivalent of M-x: SPC :
+-   Doom equivalent of `M-x`: `SPC :`
 
 
-<a id="orgfa0ecc3"></a>
+<a id="orgdca67bf"></a>
+
+# In case of emergency
+
+-   After a crash, files can be restored with `M-x` and `recover-file`, `recover-session`, or `recover-this-file`.
+    -   `auto-save-default` makes copies of files in `\~/.emacs.d/.local/cache/{autosave,backup}`, then deletes them when the buffer is saved.
+
+
+<a id="orgace697c"></a>
+
+# Doom
+
+-   Upgrading: Follow [instructions](https://github.com/doomemacs/doomemacs/blob/master/docs/getting_started.org#updowngrading-emacs); make sure to check for announcements and such about changes to the script.
+
+
+<a id="org74b7ac8"></a>
+
+# Maybe useful someday
+
+-   Tiling window manager (edwina?): gives full control over where things open
+-   Dedicated reading(???) mode: [olivetti](https://github.com/rnkn/olivetti)
+-   Highlight PDF documents: pdf-tools, org-noter (&ldquo;does this job better&rdquo;).
+-   Bibliographies:
+    -   Export Zotero library to `.bib` format
+    -   Manipulate the `.bib` file with packages e.g. Ivy-bibtex, org-roam-bibtex or org-ref
+
+
+<a id="orgbaff003"></a>
 
 # TODO map cider-repl-history-search-backward (in cider-repl-history-mode)?
 

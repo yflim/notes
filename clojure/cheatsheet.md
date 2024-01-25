@@ -1,45 +1,51 @@
 
 # Table of Contents
 
-1.  [Tools (CLI)](#orge4c7366)
-2.  [Basics / Miscellanea](#org0fb2620)
-    1.  [Help](#orga9f53cf)
-3.  [Syntax](#org0733572)
-4.  [Collections](#orga0f7baf)
-    1.  [walk, pre-walk, post-walk](#orgb2ff45b)
-5.  [Sequences](#orge8307f1)
-6.  [Transient data structures](#orga854ecf)
-7.  [Functions beget functions](#orgf2f479e)
-8.  [Doing](#org51b5936)
-9.  [Branching](#orgf2dee4d)
-10. [Macros](#orgd367484)
-11. [Namespaces](#org57eb214)
-    1.  [Dependencies](#org897ce31)
-12. [Destructuring](#org0c72d79)
-    1.  [Sequential destructuring](#org963bcb7)
-    2.  [Associative destructuring](#orgc1e78a5)
-        1.  [Keyword arguments](#org2221ab8)
-        2.  [Namespaced keywords](#orgc406965)
-        3.  [Nested maps](#org387aab7)
-13. [Abstractions](#orgf816a76)
-    1.  [Multimethods](#org03e3bfc)
-    2.  [Objects](#orgeb50aea)
-    3.  [Polymorphism](#orge23fe6f)
-14. [State](#org0148837)
-15. [Reading clojure characters](#org8edfbb3)
-    1.  [Symbols and Vars](#orga40ecca)
-    2.  [`^`: Metadata](#org51ad699)
-16. [IO](#org06fb26e)
-17. [Vars and global environment](#orgde774b1)
-18. [Testing](#org35984fe)
-    1.  [Kaocha](#org4a40b18)
-19. [Builds and dependencies](#org90aa30f)
-20. [Web](#orgdf4cc27)
-    1.  [clj-http](#org0fcbc98)
+1.  [Tools (CLI)](#orgf7093ff)
+2.  [Basics / Miscellanea](#orgcc187cc)
+    1.  [Help](#org1a47aec)
+3.  [Syntax](#orgc604309)
+4.  [Strings](#org3ec76c4)
+5.  [Collections](#org75c0501)
+    1.  [Sequences](#orgb4d9d5b)
+    2.  [Sets](#orgbf0c471)
+    3.  [walk, pre-walk, post-walk](#org6bb9f59)
+6.  [Transients](#org3998423)
+7.  [Functions beget functions](#orgc7793a1)
+8.  [Destructuring](#orgbfe10bb)
+    1.  [Sequential destructuring](#org5984819)
+    2.  [Associative destructuring](#orga11ee37)
+        1.  [Keyword arguments](#orged81feb)
+        2.  [Namespaced keywords](#org5f99eef)
+        3.  [Nested maps](#org0da3cd2)
+9.  [Doing](#org9b61a2a)
+10. [Branching](#org252ca59)
+11. [Reading clojure characters](#org403cc26)
+    1.  [Symbols and Vars](#org919fdb9)
+    2.  [`^`: Metadata](#orgf51e458)
+12. [Built-in macros](#org486ad33)
+13. [Namespaces](#org0ad318e)
+    1.  [Dependencies](#org82f4e41)
+14. [Java interop](#org428fe55)
+15. [Abstractions](#org9e48066)
+    1.  [Multimethods](#orgdb023f6)
+    2.  [Objects](#orgb4375ae)
+    3.  [Protocols](#orgf75e299)
+    4.  [Polymorphism](#orge434497)
+16. [State](#orga908893)
+17. [IO](#org7cbdefc)
+18. [Vars and global environment](#org28020dd)
+19. [Testing](#orgf5abc0d)
+    1.  [Kaocha](#orga6cebe4)
+20. [Builds and dependencies](#orgd16f2f5)
+21. [Performance](#org53c27c4)
+22. [Web](#orgb52e294)
+    1.  [clj-http](#orgf4cb69f)
+23. [Docstrings](#org0b34b61)
 
 
 
-<a id="orge4c7366"></a>
+<a id="orgf7093ff"></a>
 
 # Tools (CLI)
 
@@ -52,7 +58,7 @@
 -   Create new library: `clojure -Tclj-new lib :name myname/mylib`
 
 
-<a id="org0fb2620"></a>
+<a id="orgcc187cc"></a>
 
 # Basics / Miscellanea
 
@@ -72,6 +78,8 @@
         (name :a)
         (name "a")
         (name 'a)
+    
+    -   `namespace`: Returns the namespace string of a symbol or keyword
 
 -   Using a main
     
@@ -98,10 +106,17 @@
 \#+end<sub>src</sub>
 
 -   Equality: `=` is a value-based operation, while `identical?` tests whether its arguments are the same object
+    -   Gotcha: this seems subject to some subtleties that produce apparent inconsistencies (see below)
 
     (identical? [1] [1])
     ;; => false
     (= [1] [1])
+    ;; => true
+    (= #{1} '(1))
+    ;; => false
+    (= #{1} [1])
+    ;; => false
+    (= [1] '(1))
     ;; => true
 
 -   Value of last evaluated expression: `*1`. Analogously, `*2` and `*3` (no higher).
@@ -112,7 +127,7 @@
     (sh/sh "ls" "-aul")
 
 
-<a id="orga9f53cf"></a>
+<a id="org1a47aec"></a>
 
 ## Help
 
@@ -122,7 +137,7 @@
 -   View source code for `sym`: `(source sym)`
 
 
-<a id="org0733572"></a>
+<a id="orgc604309"></a>
 
 # Syntax
 
@@ -131,9 +146,32 @@
     expands to `(. (. System (getProperties)) (get "os.name"))`
 
 
-<a id="orga0f7baf"></a>
+<a id="org3ec76c4"></a>
+
+# Strings
+
+-   `re-quote-replacement`: escape special characters in literal replacement for a pattern match in `replace` or `replace-first`
+    
+        (require '[clojure.string :as s])
+        (def s "May 2018, June 2019")
+        (s/replace s #"May|June" "10$") ;; IllegalArgumentException
+        (s/replace s #"May|June" (s/re-quote-replacement "10$ in"))
+
+
+<a id="org75c0501"></a>
 
 # Collections
+
+-   `find`: returns map entry for given key, or `nil` if absent
+
+    (find {:a 1} :a)
+    ;; => [:a 1]
+    (val (find {:a 1} :a))
+    ;; => 1
+    (type (find {:a 1} :a))
+    ;; => clojure.lang.MapEntry
+    (key (find {:a 1} :a))
+    ;; => :a
 
 -   `vector` vs. `vec`
 
@@ -204,14 +242,9 @@ Conjoin all items of `from` into `to`, e.g.
     ;; {:a nil, :b nil, :c nil}
 
 
-<a id="orgb2ff45b"></a>
+<a id="orgb4d9d5b"></a>
 
-## TODO walk, pre-walk, post-walk
-
-
-<a id="orge8307f1"></a>
-
-# Sequences
+## Sequences
 
 -   `repeat`: `(repeat x)`, `(repeat n x)`. Note: result is lazy.
 
@@ -234,10 +267,24 @@ Conjoin all items of `from` into `to`, e.g.
     (list* 1 ())
     ;; => (1)
 
+-   `map-indexed`
 
-<a id="orga854ecf"></a>
 
-# Transient data structures
+<a id="orgbf0c471"></a>
+
+## Sets
+
+`select`: `(select pred xset)`
+
+
+<a id="org6bb9f59"></a>
+
+## TODO walk, pre-walk, post-walk
+
+
+<a id="org3998423"></a>
+
+# Transients
 
 -   Vectors, hash-maps, and hash-sets supported
 -   `(transient ds)`: O(1) creation from persistent data structures
@@ -248,7 +295,7 @@ Conjoin all items of `from` into `to`, e.g.
 -   Same code structure as functional version: `conj!`, `pop!`, `assoc!`, `dissoc!`, `disj!`
 
 
-<a id="orgf2f479e"></a>
+<a id="orgc7793a1"></a>
 
 # Functions beget functions
 
@@ -278,7 +325,141 @@ Conjoin all items of `from` into `to`, e.g.
         ;; => 15
 
 
-<a id="org51b5936"></a>
+<a id="orgbfe10bb"></a>
+
+# Destructuring
+
+
+<a id="org5984819"></a>
+
+## Sequential destructuring
+
+    (let [[a _ b _] '(1 2 3 4)] (println _))
+    ;; => 4
+    
+    (def numbers [1 2 3 4 5])
+    (let [[x & remaining :as all] numbers]
+      (apply prn [remaining all]))
+    ;; => (2 3 4 5) [1 2 3 4 5]
+    
+    (def my-line [[5 10] [10 20]])
+    (let [[[a b :as group1] [c d :as group2]] my-line]
+      (println a b group1)
+      (println c d group2))
+    ;; => 5 10 [5 10]
+    ;; => 10 20 [10 20]
+
+
+<a id="orga11ee37"></a>
+
+## Associative destructuring
+
+    (def my-map {:a "A" :b "B" :c 3 :d 4})
+    (let [{a :a, x :x, :or {x "Not found!"}, :as all} my-map]
+      (println "I got" a "from" all)
+      (println "Where is x?" x))
+    ;= I got A from {:a "A" :b "B" :c 3 :d 4}
+    ;= Where is x? Not found!
+    
+    (def client {:name "Super Co."
+                 :location "Philadelphia"
+                 :description "The worldwide leader in plastic tableware."})
+    (let [{:keys [name location description]} client]
+      (println name location "-" description))
+    ;= Super Co. Philadelphia - The worldwide leader in plastic tableware.
+    
+    (def string-keys {"first-name" "Joe" "last-name" "Smith"})
+    (let [{:strs [first-name last-name]} string-keys]
+      (println first-name last-name))
+    ;= Joe Smith
+    
+    (def symbol-keys {'first-name "Jane" 'last-name "Doe"})
+    (let [{:syms [first-name last-name]} symbol-keys]
+      (println first-name last-name))
+    ;= Jane Doe
+    
+    (def multiplayer-game-state
+      {:joe {:class "Ranger"
+             :weapon "Longbow"
+             :score 100}} ;...
+      )
+    (let [{{:keys [class weapon]} :joe} multiplayer-game-state]
+      (println "Joe is a" class "wielding a" weapon))
+    ; or
+    (let [{:joe/keys [class weapon]} multiplayer-game-state]
+      (println "Joe is a" class "wielding a" weapon))
+    ;= Joe is a Ranger wielding a Longbow
+
+
+<a id="orged81feb"></a>
+
+### Keyword arguments
+
+    (defn configure [val options]
+      (let [{:keys [debug verbose] :or {debug false, verbose false}} options]
+        (println "val =" val " debug =" debug " verbose =" verbose)))
+    (configure 12 {:debug true})
+    ;;val = 12  debug = true  verbose = false
+    
+    (defn configure [val & {:keys [debug verbose]
+                            :or {debug false, verbose false}}]
+      (println "val =" val " debug =" debug " verbose =" verbose))
+    (configure 10)
+    ;;val = 10  debug = false  verbose = false
+    (configure 12 :verbose true :debug true)
+    ;;val = 12  debug = true  verbose = true
+    (configure 12 {:verbose true :debug true})
+    ;;val = 12  debug = true  verbose = true
+    (configure 12 :debug true {:verbose true})
+    ;;val = 12  debug = true  verbose = true
+
+
+<a id="org5f99eef"></a>
+
+### Namespaced keywords
+
+    (def human {:person/name "Franklin"
+                :person/age 25
+                :hobby/hobbies "running"})
+    (let [{:keys [hobby/hobbies]
+           :person/keys [name age]
+           :or {age 0}} human]
+      (println name "is" age "and likes" hobbies))
+    ;= Franklin is 25 and likes running
+    
+    (let [{:person/keys [age]
+           hobby-hobbies :hobby/hobbies
+           person-name :person/name} human]
+      (println person-name "is" age "and likes" hobby-hobbies))
+    ;= Franklin is 25 and likes running
+    
+    (require '[person :as p])
+    (let [person {::p/name "Franklin", ::p/age 25}
+          {:keys [::p/name ::p/age]} person]
+      (println name "is" age))
+    ;= Franklin is 25
+
+
+<a id="org0da3cd2"></a>
+
+### Nested maps
+
+    (def john-smith {:f-name "John"
+                     :l-name "Smith"
+                     :phone "555-555-5555"
+                     :address {:street "452 Lisp Ln."
+                               :city "Macroville"
+                               :state "Kentucky"
+                               :zip "81321"}
+                     :hobbies ["running" "hiking" "basketball"]
+                     :company "Functional Industries"})
+    (defn print-contact-info
+      [{:keys [f-name l-name phone company]
+        {:keys [street city state zip]} :address
+        [fav-hobby second-hobby] :hobbies}] ...)
+
+
+<a id="org9b61a2a"></a>
 
 # Doing
 
@@ -321,7 +502,7 @@ Conjoin all items of `from` into `to`, e.g.
         hi sister
         ;; => nil
 
--   `doall`: Like `doseq` except the sequence head is retained and returned; entire seq kept in memory. E.g.:
+-   `doall`: Like `dorun` except the sequence head is retained and returned; entire seq kept in memory. E.g.:
     `(doall (map println [1 2 3]))`
     1
     2
@@ -329,7 +510,7 @@ Conjoin all items of `from` into `to`, e.g.
     ;; => (nil nil nil)
 
 
-<a id="orgf2dee4d"></a>
+<a id="org252ca59"></a>
 
 # Branching
 
@@ -400,268 +581,12 @@ Conjoin all items of `from` into `to`, e.g.
         ;;=> "default"
 
 
-<a id="orgd367484"></a>
-
-# Macros
-
--   `some->`: `(some-> expr & forms)`
-    When `expr` is not nil, threads it into the first form (via ->), and when that result is not nil, through the next etc.
-    
-        (-> {:a 1} :b inc)
-        ;; NullPointerException   clojure.lang.Numbers.ops (Numbers.java:942)
-        (some-> {:a 1} :b inc)
-        ;; nil
-
--   Return an expression, e.g.
-    
-        (defmacro ret-export-db [approach-fn conn path]
-          `(~approach-fn @~conn ~path))
-        (ret-export-db export-db-tc conn "/test/path.txt")
-    
-    Invoking `ret-export-db` as above evaluates to `(export-db-tc @conn "/test/path.txt")`
-
-
-<a id="org57eb214"></a>
-
-# Namespaces
-
--   Important namespaces: clojure.core, clojure.repl
--   Require functions that can be referred to unqualified:
-    `(ns ns-name (:require [my.namespace :refer [compute other-fn]]))`
--   Force loading of all identified libs even if already loaded:
-    `(require '[learn-cljs.import-fns.format :as fmt] :reload)`
--   Instruct REPL to operate in namespace:
-    `(in-ns 'learn-cljs.import-fns.format)`
--   Current namespace: `*ns*`
--   Remove mapping for symbol from namespace:
-    `(ns-unmap 'user 'base-config)` or `(ns-unmap *ns* 'base-config)`
--   Unalias namespace: `(ns-unalias *ns* 'm)`
--   Refresh all namespaces:
-    
-        (require '[clojure.tools.namespace.repl :refer [refresh]])
-        (refresh)
-
-
-<a id="org897ce31"></a>
-
-## Dependencies
-
--   require vs. use vs. import:
-    
-    -   require: load Clojure library
-    -   use: same as require, and additionally refers to loaded definitions from current ns
-    -   import: for Java classes and interfaces only, e.g.
-    
-        (import java.util.Date)
-        (def *now* (Date.))
-        ;; import multiple classes in a namespace
-        (ns wanderung.datascript
-          (:require [wanderung.core :as w :refer [create-source]])
-          (:import [wanderung.core IConnection IExtract])
-
--   How to use local dependencies
-    
-    -   In dependency folder, run $ mvn install
-    
-    OR
-    
-    -   [Leiningen checkout dependencies](https://github.com/technomancy/leiningen/blob/master/doc/TUTORIAL.md#checkout-dependencies)
-        Update local dependencies without running `lein install` and restarting REPL every time a change is made
-
-
-<a id="org0c72d79"></a>
-
-# Destructuring
-
-
-<a id="org963bcb7"></a>
-
-## Sequential destructuring
-
-    (let [[a _ b _] '(1 2 3 4)] (println _))
-    ;; => 4
-    
-    (def numbers [1 2 3 4 5])
-    (let [[x & remaining :as all] numbers]
-      (apply prn [remaining all]))
-    ;; => (2 3 4 5) [1 2 3 4 5]
-    
-    (def my-line [[5 10] [10 20]])
-    (let [[[a b :as group1] [c d :as group2]] my-line]
-      (println a b group1)
-      (println c d group2))
-    ;; => 5 10 [5 10]
-    ;; => 10 20 [10 20]
-
-
-<a id="orgc1e78a5"></a>
-
-## Associative destructuring
-
-    (def my-map {:a "A" :b "B" :c 3 :d 4})
-    (let [{a :a, x :x, :or {x "Not found!"}, :as all} my-map]
-      (println "I got" a "from" all)
-      (println "Where is x?" x))
-    ;= I got A from {:a "A" :b "B" :c 3 :d 4}
-    ;= Where is x? Not found!
-    
-    (def client {:name "Super Co."
-                 :location "Philadelphia"
-                 :description "The worldwide leader in plastic tableware."})
-    (let [{:keys [name location description]} client]
-      (println name location "-" description))
-    ;= Super Co. Philadelphia - The worldwide leader in plastic tableware.
-    
-    (def string-keys {"first-name" "Joe" "last-name" "Smith"})
-    (let [{:strs [first-name last-name]} string-keys]
-      (println first-name last-name))
-    ;= Joe Smith
-    
-    (def symbol-keys {'first-name "Jane" 'last-name "Doe"})
-    (let [{:syms [first-name last-name]} symbol-keys]
-      (println first-name last-name))
-    ;= Jane Doe
-    
-    (def multiplayer-game-state
-      {:joe {:class "Ranger"
-             :weapon "Longbow"
-             :score 100}} ;...
-      )
-    (let [{{:keys [class weapon]} :joe} multiplayer-game-state]
-      (println "Joe is a" class "wielding a" weapon))
-    ; or
-    (let [{:joe/keys [class weapon]} multiplayer-game-state]
-      (println "Joe is a" class "wielding a" weapon))
-    ;= Joe is a Ranger wielding a Longbow
-
-
-<a id="org2221ab8"></a>
-
-### Keyword arguments
-
-    (defn configure [val options]
-      (let [{:keys [debug verbose] :or {debug false, verbose false}} options]
-        (println "val =" val " debug =" debug " verbose =" verbose)))
-    (configure 12 {:debug true})
-    ;;val = 12  debug = true  verbose = false
-    
-    (defn configure [val & {:keys [debug verbose]
-                            :or {debug false, verbose false}}]
-      (println "val =" val " debug =" debug " verbose =" verbose))
-    (configure 10)
-    ;;val = 10  debug = false  verbose = false
-    (configure 12 :verbose true :debug true)
-    ;;val = 12  debug = true  verbose = true
-    (configure 12 {:verbose true :debug true})
-    ;;val = 12  debug = true  verbose = true
-    (configure 12 :debug true {:verbose true})
-    ;;val = 12  debug = true  verbose = true
-
-
-<a id="orgc406965"></a>
-
-### Namespaced keywords
-
-    (def human {:person/name "Franklin"
-                :person/age 25
-                :hobby/hobbies "running"})
-    (let [{:keys [hobby/hobbies]
-           :person/keys [name age]
-           :or {age 0}} human]
-      (println name "is" age "and likes" hobbies))
-    ;= Franklin is 25 and likes running
-    
-    (let [{:person/keys [age]
-           hobby-hobbies :hobby/hobbies
-           person-name :person/name} human]
-      (println person-name "is" age "and likes" hobby-hobbies))
-    ;= Franklin is 25 and likes running
-    
-    (require '[person :as p])
-    (let [person {::p/name "Franklin", ::p/age 25}
-          {:keys [::p/name ::p/age]} person]
-      (println name "is" age))
-    ;= Franklin is 25
-
-
-<a id="org387aab7"></a>
-
-### Nested maps
-
-    (def john-smith {:f-name "John"
-                     :l-name "Smith"
-                     :phone "555-555-5555"
-                     :address {:street "452 Lisp Ln."
-                               :city "Macroville"
-                               :state "Kentucky"
-                               :zip "81321"}
-                     :hobbies ["running" "hiking" "basketball"]
-                     :company "Functional Industries"})
-    (defn print-contact-info
-      [{:keys [f-name l-name phone company]
-        {:keys [street city state zip]} :address
-        [fav-hobby second-hobby] :hobbies}] ...)
-
-
-<a id="orgf816a76"></a>
-
-# Abstractions
-
-
-<a id="org03e3bfc"></a>
-
-## Multimethods
-
-    (defmulti do-math (fn [operation x y] operation))
-    (defmethod do-math :add [_ x y] (+ x y))
-    (defmethod do-math :subtract [_ x y] (+ x y))
-    (do-math :add 1 2)
-
-
-<a id="orgeb50aea"></a>
-
-## Objects
-
--   Where required: `(require '[clojure.reflect :refer [reflect]])`
--   Show methods (and other information) for an object: `(reflect some-obj)`
-    Note that only methods directly defined on the object&rsquo;s class are listed.
--   Show methods (including those inherited) on an object&rsquo;s class:
-    `(.getMethods (.getClass (tc/rows some-obj :as-maps)))`
-
-
-<a id="orge23fe6f"></a>
-
-## Polymorphism
-
--   Get supertypes (both classes and interfaces) of a given type, e.g.
-    `(supers clojure.lang.PersistentList$EmptyList)`
-    `(supers clojure.lang.PersistentList)`
--   Test whether `x` is an instance of class `c`: `(instance? c x)`
--   More general than `instance?`: `(isa? child parent)` or `(isa? hierarchy child parent)`
-    -   Allows relationship established via `derive` as well as Java type inheritance
--   `derive`: `(derive tag parent)` or `(derive hierarchy tag parent)`
-    where `parent` must be a namespace-qualified symbol or keyword; `child` can be those or a class.
-    E.g.: `(derive ::milk  ::dairy)`
--   More general version of `supers`: `parents`, which returns `derive` relationships as well
--   Analogue of `parents`: `descendants`
-
-
-<a id="org0148837"></a>
-
-# State
-
--   Set validator on atom creation, e.g.:
-
-`(atom init-val 0 :validator validator-fn)`
-`(atom init-val {:a 1} :validator validator-fn)`
-
-
-<a id="org8edfbb3"></a>
+<a id="org403cc26"></a>
 
 # Reading clojure characters
 
 
-<a id="orga40ecca"></a>
+<a id="org919fdb9"></a>
 
 ## Symbols and Vars
 
@@ -718,7 +643,7 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
         ;; => #'user/deref-fn-sym
 
 
-<a id="org51ad699"></a>
+<a id="orgf51e458"></a>
 
 ## `^`: Metadata
 
@@ -743,14 +668,171 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
     ;; => {:ns #<Namespace user>, ... :tag java.lang.Integer}
 
 
-<a id="org06fb26e"></a>
+<a id="org486ad33"></a>
+
+# Built-in macros
+
+-   `some->`: `(some-> expr & forms)`
+    When `expr` is not nil, threads it into the first form (via ->), and when that result is not nil, through the next etc.
+    
+        (-> {:a 1} :b inc)
+        ;; NullPointerException   clojure.lang.Numbers.ops (Numbers.java:942)
+        (some-> {:a 1} :b inc)
+        ;; nil
+
+-   Return an expression, e.g.
+    
+        (defmacro ret-export-db [approach-fn conn path]
+          `(~approach-fn @~conn ~path))
+        (ret-export-db export-db-tc conn "/test/path.txt")
+    
+    Invoking `ret-export-db` as above evaluates to `(export-db-tc @conn "/test/path.txt")`
+
+-   `doto`: `(doto x & forms)`
+    Evaluates `x` then calls all the methods and functions invoked in `forms` with the value of `x` supplied before the given arguments. Returns `x`. E.g.:
+    `(doto (new java.util.HashMap) (.put "a" 1) (.put "b" 2))`
+
+
+<a id="org0ad318e"></a>
+
+# Namespaces
+
+-   Important namespaces: clojure.core, clojure.repl
+-   Require functions that can be referred to unqualified:
+    `(ns ns-name (:require [my.namespace :refer [compute other-fn]]))`
+-   Force loading of all identified libs even if already loaded:
+    `(require '[learn-cljs.import-fns.format :as fmt] :reload)`
+-   Instruct REPL to operate in namespace:
+    `(in-ns 'learn-cljs.import-fns.format)`
+-   Current namespace: `*ns*`
+-   Remove mapping for symbol from namespace:
+    `(ns-unmap 'user 'base-config)` or `(ns-unmap *ns* 'base-config)`
+-   Unalias namespace: `(ns-unalias *ns* 'm)`
+-   Refresh all namespaces:
+    
+        (require '[clojure.tools.namespace.repl :refer [refresh]])
+        (refresh)
+
+
+<a id="org82f4e41"></a>
+
+## Dependencies
+
+-   require vs. use vs. import:
+    
+    -   require: load Clojure library
+    -   use: same as require, and additionally refers to loaded definitions from current ns
+    -   import: for Java classes and interfaces only, e.g.
+    
+        (import java.util.Date)
+        (def *now* (Date.))
+        ;; import multiple classes in a namespace
+        (ns wanderung.datascript
+          (:require [wanderung.core :as w :refer [create-source]])
+          (:import [wanderung.core IConnection IExtract])
+
+-   How to use local dependencies
+    
+    -   In dependency folder, run $ mvn install
+    
+    OR
+    
+    -   [Leiningen checkout dependencies](https://github.com/technomancy/leiningen/blob/master/doc/TUTORIAL.md#checkout-dependencies)
+        Update local dependencies without running `lein install` and restarting REPL every time a change is made
+
+
+<a id="org428fe55"></a>
+
+# Java interop
+
+    (.toUpperCase "fred")
+    ;; => "FRED"
+    (.getName String)   ; Note: .getName invoked on java.lang.Class
+    ;; => "java.lang.String"
+    (. java.time.Instant now)
+    ;; => #object[java.time.Instant 0xbc379f "2023-05-12T03:54:22.697416Z"]
+    (.-x (java.awt.Point. 1 2))
+    ;; => 1
+    (java.lang.Class/forName "Fully.Qualified.Class.Name")
+
+
+<a id="org9e48066"></a>
+
+# Abstractions
+
+
+<a id="orgdb023f6"></a>
+
+## Multimethods
+
+    (defmulti do-math (fn [operation x y] operation))
+    (defmethod do-math :add [_ x y] (+ x y))
+    (defmethod do-math :subtract [_ x y] (+ x y))
+    (do-math :add 1 2)
+
+
+<a id="orgb4375ae"></a>
+
+## Objects
+
+-   Where required: `(require '[clojure.reflect :refer [reflect]])`
+-   Show methods (and other information) for an object: `(reflect some-obj)`
+    Note that only methods directly defined on the object&rsquo;s class are listed.
+-   Show methods (including those inherited) on an object&rsquo;s class:
+    `(.getMethods (.getClass (tc/rows some-obj :as-maps)))`
+
+
+<a id="orgf75e299"></a>
+
+## Protocols
+
+
+<a id="orge434497"></a>
+
+## Polymorphism
+
+-   Get supertypes (both classes and interfaces) of a given type, e.g.
+    `(supers clojure.lang.PersistentList$EmptyList)`
+    `(supers clojure.lang.PersistentList)`
+-   Test whether `x` is an instance of class `c`: `(instance? c x)`
+-   More general than `instance?`: `(isa? child parent)` or `(isa? hierarchy child parent)`
+    -   Allows relationship established via `derive` as well as Java type inheritance
+-   `derive`: `(derive tag parent)` or `(derive hierarchy tag parent)`
+    where `parent` must be a namespace-qualified symbol or keyword; `child` can be those or a class.
+    E.g.: `(derive ::milk  ::dairy)`
+-   More general version of `supers`: `parents`, which returns `derive` relationships as well
+-   Analogue of `parents`: `descendants`
+
+
+<a id="orga908893"></a>
+
+# State
+
+-   Set validator on atom creation, e.g.:
+
+`(atom init-val 0 :validator validator-fn)`
+`(atom init-val {:a 1} :validator validator-fn)`
+
+
+<a id="org7cbdefc"></a>
 
 # IO
 
+-   Reading and writing line by line:
+    
+        (with-open [rdr (io/reader (io/file data-dir "agencies.csv"))
+                    w (io/writer (io/file data-dir "agencies-cp.csv") :append true)]
+          (let [rows (line-seq rdr)
+                header (->> (string/split (first rows) #",")
+                            (map #(str "agency/" %))
+                            (string/join ","))]
+            (.write w (str header "\n"))
+            (doseq [row (rest rows)]
+              (.write w (str row "\n")))))
 -   Read EDN file: `(clojure.edn/read (java.io.PushbackReader. (io/reader "test.edn")))`
 
 
-<a id="orgde774b1"></a>
+<a id="org28020dd"></a>
 
 # Vars and global environment
 
@@ -760,7 +842,7 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
                     (fn [f] (fn [& args] (println "instrumented") (apply f args))))
 
 
-<a id="org35984fe"></a>
+<a id="orgf5abc0d"></a>
 
 # Testing
 
@@ -775,7 +857,7 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
     (test-vars [#'foo.bar-test/test2])
 
 
-<a id="org4a40b18"></a>
+<a id="orga6cebe4"></a>
 
 ## Kaocha
 
@@ -785,21 +867,97 @@ A Symbol (can) references a Var, which holds/represents a value (which may be a 
 `bin/kaocha --skip test.ns1 --skip test.ns2`
 
 
-<a id="org90aa30f"></a>
+<a id="orgd16f2f5"></a>
 
 # Builds and dependencies
 
 -   Show contents of jar: `jar tf jar-file`
 
 
-<a id="orgdf4cc27"></a>
+<a id="org53c27c4"></a>
+
+# Performance
+
+-   Benchmarking:
+    -   Quick benchmark with printed performance summary
+        
+            (criterium/with-progress-reporting
+             (criterium/quick-bench (nth ^longs (into [] (range 10000)) 0)))
+        
+        -   `quick-benchmark` or `benchmark` to record results
+-   Profiling: VisualVM sampler tab
+-   Type hinting:
+    -   For arrays, e.g.:
+        
+        -   `(alength ^longs arr)` and `(alength ^"[J" arr)`
+        -   `(aget ^"[Ljava.lang.Object;" objs-1 0)`
+        
+        where `arr` is an array of longs and
+        
+            (type (long-array 5))
+            ;; => [J
+            (type (object-array 5))
+            ;; => [Ljava.lang.Object;
+            (type ints-1)
+            ;; => [I
+            (aset ints-2 0 (aget ^"[I" ints-1 0))
+    -   In threading macro, just put parenthese around hinted expression:
+        
+            (fn [^java.nio.file.WatchEvent e]
+                 (-> e ^java.nio.file.Path (.context) .toAbsolutePath))
+
+
+<a id="orgb52e294"></a>
 
 # Web
 
 
-<a id="org0fcbc98"></a>
+<a id="orgf4cb69f"></a>
 
 ## clj-http
 
 -   debugging: add `:debug true` to request map
+
+
+<a id="org0b34b61"></a>
+
+# Docstrings
+
+-   Backtick-quote function arguments and special keywords, e.g.
+    &ldquo;Adds \`x\` to the transient collection&rdquo;
+-   Link to other functions, e.g. &ldquo;See also $$\[listen!$$\\]&rdquo; (minus escape backslashes)
+-   Include small examples, e.g. (showing only skeletal code snippet and omitting rest of docstring):
+    &ldquo;\`\`\`clojure
+    (def app &#x2026;)
+    \`\`\`&rdquo;
+-   Use tables to describe complex options maps:
+    
+    <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+    
+    
+    <colgroup>
+    <col  class="org-left" />
+    
+    <col  class="org-left" />
+    </colgroup>
+    <thead>
+    <tr>
+    <th scope="col" class="org-left">key</th>
+    <th scope="col" class="org-left">description</th>
+    </tr>
+    </thead>
+    
+    <tbody>
+    <tr>
+    <td class="org-left">&#x2026;</td>
+    <td class="org-left">&#x2026;</td>
+    </tr>
+    
+    
+    <tr>
+    <td class="org-left">`:router`</td>
+    <td class="org-left">Function of &#x2026;</td>
+    </tr>
+    </tbody>
+    </table>
 
