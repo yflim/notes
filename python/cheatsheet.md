@@ -1,80 +1,99 @@
 
 # Table of Contents
 
-1.  [Miscellaneous](#org78ddf4b)
-2.  [Packages & Modules](#org0184b96)
-3.  [System utils](#org5b64aea)
-4.  [Types](#org8c03b05)
-5.  [Data](#org02b04b9)
-    1.  [Pandas](#orgc1c806c)
-    2.  [virtual env, etc.](#orgb3f2532)
-6.  [Visualisation](#orgc288804)
-    1.  [Seaborn](#orge8e678e)
-7.  [Jupyter](#org5fa879b)
-    1.  [Help](#orgc2e6953)
-    2.  [Editing](#orga1b515d)
-    3.  [Etc.](#org42da28f)
-8.  [Integrate into the above](#orgd706160)
-9.  [Help](#orgf5870f9)
-10. [Basics](#orgdd53c5e)
-11. [Gotchas](#orge1ec3e5)
-12. [&ldquo;Functional programming&rdquo;](#org401306b)
-    1.  [Keyword arguments & Arbitrary argument lists](#orgb3c9ed9)
-    2.  [Unpacking argument lists](#orgb3f2ab7)
-13. [Data types](#org7cfd5ba)
-    1.  [Collections](#orgfd3daef)
-    2.  [Type hints](#orgc4325cf)
-14. [Modules, packages, oh my!](#orgd10a748)
-    1.  [Modules](#org96ae9ac)
-    2.  [Packages](#orga078e34)
-15. [System environment](#orgb46374a)
-16. [**PSA**](#org2ce012c)
-17. [Jupyter](#org4445f81)
-18. [NumPy](#org6a35b0c)
-19. [Pandas](#org79671f4)
-20. [Plotting](#org09034cd)
-21. [Mod Cons](#org061542a)
-22. [Typing](#orgee8a954)
-23. [Performance](#org7ff3a49)
-24. [Python environment management](#orgf90d05f)
-    1.  [Update & install](#org8738b12)
-        1.  [On Ubuntu](#orgfea80b7)
-        2.  [Mac OS](#orgd28f6dc)
-    2.  [General](#orgd8a8dc7)
-        1.  [Tool to consider when it gets better](#orgda29aa7)
-    3.  [In code](#org27300cf)
-    4.  [Project-specific](#orgdd0d291)
+1.  [Miscellaneous](#org462872e)
+2.  [Packages & Modules](#org9acb775)
+    1.  [Modules](#org917a673)
+    2.  [Packages](#orgf03ef52)
+3.  [System utils](#orge7b61de)
+4.  [Types](#org83c6eaa)
+5.  [Data](#orgcee7d51)
+    1.  [Pandas](#orgdabc849)
+6.  [Visualisation](#org7f0ee46)
+    1.  [Seaborn](#org321d0c4)
+7.  [Jupyter](#org43ab9d3)
+    1.  [Help](#org6106fe5)
+    2.  [Editing](#org6bfe4a1)
+    3.  [Etc.](#org2b75782)
+8.  [&ldquo;Functional programming&rdquo;](#org9572720)
+    1.  [Keyword arguments & Arbitrary argument lists](#org946810d)
+    2.  [Unpacking argument lists](#org369bb4d)
+9.  [Data types](#org346f847)
+    1.  [Builtins](#orgbf0b5f4)
+    2.  [Collections](#org60e1a92)
+    3.  [Type hints](#orgf34d1e4)
+10. [Gotchas](#org814afde)
+11. [Help](#org437aeff)
+12. [Integrate into the above](#org63d776c)
+13. [**PSA**](#org5d39960)
+14. [Jupyter](#org116a413)
+15. [NumPy](#org3e61c55)
+16. [Pandas](#org15e25ab)
+17. [Plotting](#org191e1d3)
+18. [Mod Cons](#org8e730c6)
+19. [Typing](#orga59284f)
+20. [Performance](#org9f421a4)
+21. [Python environment management](#orgbdae5fc)
+    1.  [Update & install](#orgc4895c8)
+        1.  [On Ubuntu](#orgf22cc2e)
+        2.  [Mac OS](#orgb3b85ce)
+    2.  [General](#org495889a)
+        1.  [Tool to consider when it gets better](#org96d9878)
+    3.  [In code](#orga9d0d0a)
+    4.  [Project-specific](#orgd737021)
 
 
 
-<a id="org78ddf4b"></a>
+<a id="org462872e"></a>
 
 # Miscellaneous
 
--   Help: `help(module)`, `help(fn)`
 -   Reload module without restarting interpreter:
     
         import importlib
         importlib.reload(mod)
 
 
-<a id="org0184b96"></a>
+<a id="org9acb775"></a>
 
 # Packages & Modules
 
--   Import examples:
-    `import foo.bar`
-    `from foo import bar`
-    `from foo import *`
--   If <span class="underline"><span class="underline">init.py</span></span> is present in a package directory, it is invoked when the package or a module in the package is imported.
--   Subpackages e.g.:
+
+<a id="org917a673"></a>
+
+## Modules
+
+-   A module is a file containing Python definitions and statements.
+    -   `import module` does not add definitions from `module` directly to current namespace
+    -   `from module import ...` adds definitions directly
+    -   `as` can also be used with `from ...`, e.g. `from module import fn as function`
+    -   More import examples:
+        `import foo.bar`
+        `from foo import bar`
+        `from foo import *`
+
+
+<a id="orgf03ef52"></a>
+
+## Packages
+
+-   A package is a (possibly nested) collection of modules
+-   `__init__.py` is required to make Python treat the directory as a package
+    -   Invoked when the package or a module in the package is imported
+    -   Can be empty, execute init code for the package, or define `__all__`
+        -   `__all__` lists module names that should be imported by (the discouraged) `from package import *`, e.g.
+            `__all__ = ["echo", "surround", "reverse"]`
+        -   if `__all__` is not defined, `from package import *` runs any init code in, and imports names defined and submodules explicitly loaded by, `__init__.py`
+-   Importing modules from subpackages e.g.:
     `import pkg.sub_pkg1.mod1`
     `from pkg.sub_pkg2 import mod3`
 
 
-<a id="org5b64aea"></a>
+<a id="orge7b61de"></a>
 
 # System utils
+
+-   get pwd: `os.getcwd()`
 
     import os
     
@@ -87,19 +106,19 @@
             print(f)
 
 
-<a id="org8c03b05"></a>
+<a id="org83c6eaa"></a>
 
 # Types
 
 -   Check type: `isinstance(x, str)`
 
 
-<a id="org02b04b9"></a>
+<a id="orgcee7d51"></a>
 
 # Data
 
 
-<a id="orgc1c806c"></a>
+<a id="orgdabc849"></a>
 
 ## Pandas
 
@@ -148,11 +167,6 @@
         -   Get df with route<sub>id</sub> as index and additional column trip<sub>id</sub>:
             `route_trip_stop_counts.rename('stop_count').reset_index(level='trip_id')`
 
-
-<a id="orgb3f2532"></a>
-
-## TODO virtual env, etc.
-
 -   Groupby
     
     -   `df.groupby('A')` is just syntactic sugar for `df.groupby(df['A'])`
@@ -179,12 +193,12 @@
 -   [Resampling API](https://pandas.pydata.org/docs/user_guide/timeseries.html#resampling)
 
 
-<a id="orgc288804"></a>
+<a id="org7f0ee46"></a>
 
 # Visualisation
 
 
-<a id="orge8e678e"></a>
+<a id="org321d0c4"></a>
 
 ## Seaborn
 
@@ -192,19 +206,19 @@ Draw a plot of two variables with bivariate and univariate graphs (e.g. scatterp
 `sns.jointplot(data=df, x='x', y='y')`
 
 
-<a id="org5fa879b"></a>
+<a id="org43ab9d3"></a>
 
 # Jupyter
 
 
-<a id="orgc2e6953"></a>
+<a id="org6106fe5"></a>
 
 ## Help
 
 -   Function help: inside parentheses, hit `Shift+Tab`
 
 
-<a id="orga1b515d"></a>
+<a id="org6bfe4a1"></a>
 
 ## Editing
 
@@ -214,29 +228,51 @@ Draw a plot of two variables with bivariate and univariate graphs (e.g. scatterp
 -   Dedent `Cmd+[`
 
 
-<a id="org42da28f"></a>
+<a id="org2b75782"></a>
 
 ## Etc.
 
 -   Command palette (listing commands with shortcuts): `Cmd+Shift+p`
 
 
-<a id="orgd706160"></a>
+<a id="org9572720"></a>
 
-# TODO Integrate into the above
+# &ldquo;Functional programming&rdquo;
+
+-   Call method on object or module: `(getattr(obj, attr_name_str))`
+    -   E.g.:
+        
+            (getattr('', 'join'))(['a', 'b', 'c'])
+            #-> 'abc'
+            (getattr(chile1_df[1], 'le')(pd.Timestamp('2022-03-01')) & (chile1_df[0] == 'SOSP')).sum()
+            #-> ...
 
 
-<a id="orgf5870f9"></a>
+<a id="org946810d"></a>
 
-# Help
+## Keyword arguments & Arbitrary argument lists
 
--   View documentation: `help(fn)`
--   Display the printable representation of an object: `repr()`
+-   E.g. `getattr(df[col], op)(pd.Timestamp(*ts_args, **ts_kwargs))`
 
 
-<a id="orgdd53c5e"></a>
+<a id="org369bb4d"></a>
 
-# Basics
+## Unpacking argument lists
+
+-   I.e. sort of the reverse of what happens in the preceding section/example, e.g.
+    
+        args = [3, 6]
+        list(range(*args))
+
+
+<a id="org346f847"></a>
+
+# Data types
+
+
+<a id="orgbf0b5f4"></a>
+
+## Builtins
 
     import builtins
     something = (0,0)
@@ -247,13 +283,32 @@ Draw a plot of two variables with bivariate and univariate graphs (e.g. scatterp
               print("tuple")
 
 
-<a id="orge1ec3e5"></a>
+<a id="org60e1a92"></a>
+
+## Collections
+
+e.g. `from collections.abc import Collection`
+
+
+<a id="orgf34d1e4"></a>
+
+## Type hints
+
+-   Multiple types:
+    
+        def fn(arg: int | str = ''):
+            return arg
+-   `Pandera` for Pandas (or more general?) type hinting
+
+
+<a id="org814afde"></a>
 
 # Gotchas
 
--   Total bullshit: `list()` apparently mutates its input when given a map.
+-   `list()` apparently mutates its input when given a map.
     -   When called again on the same variable without doing anything else to the latter in between, returns an empty result
--   WTF???!!!???
+
+-   ???!!!???
     
         None == None
         # True
@@ -271,102 +326,27 @@ Draw a plot of two variables with bivariate and univariate graphs (e.g. scatterp
         # 2    False
 
 
-<a id="org401306b"></a>
+<a id="org437aeff"></a>
 
-# &ldquo;Functional programming&rdquo;
+# Help
 
--   Call method on object or module: `(getattr(obj, attr_name_str))`
-    -   E.g.:
-        
-            (getattr('', 'join'))(['a', 'b', 'c'])
-            #-> 'abc'
-            (getattr(chile1_df[1], 'le')(pd.Timestamp('2022-03-01')) & (chile1_df[0] == 'SOSP')).sum()
-            #-> ...
+-   Help: `help(module)`, `help(fn)`
+-   Display the printable representation of an object: `repr()`
 
 
-<a id="orgb3c9ed9"></a>
+<a id="org63d776c"></a>
 
-## Keyword arguments & Arbitrary argument lists
-
--   E.g. `getattr(df[col], op)(pd.Timestamp(*ts_args, **ts_kwargs))`
+# TODO Integrate into the above
 
 
-<a id="orgb3f2ab7"></a>
-
-## Unpacking argument lists
-
--   I.e. sort of the reverse of what happens in the preceding section/example, e.g.
-    
-        args = [3, 6]
-        list(range(*args))
-
-
-<a id="org7cfd5ba"></a>
-
-# Data types
-
-
-<a id="orgfd3daef"></a>
-
-## Collections
-
-e.g. `from collections.abc import Collection`
-
-
-<a id="orgc4325cf"></a>
-
-## Type hints
-
--   Multiple types:
-    
-        def fn(arg: int | str = ''):
-            return arg
--   `Pandera` for Pandas (or more general?) type hinting
-
-
-<a id="orgd10a748"></a>
-
-# Modules, packages, oh my!
-
-
-<a id="org96ae9ac"></a>
-
-## Modules
-
--   A module is a file containing Python definitions and statements.
-    -   `import module` does not add definitions from `module` directly to current namespace
-    -   `from module import ...` adds definitions directly
-    -   `as` can also be used with `from ...`, e.g. `from module import fn as function`
-
-
-<a id="orga078e34"></a>
-
-## Packages
-
--   A package is a (possibly nested) collection of modules
--   `__init__.py` is required to make Python treat the directory as a package
-    -   Can be empty, execute init code for the package, or define `__all__`
-        -   `__all__` lists module names that should be imported by (the discouraged) `from package import *`, e.g.
-            `__all__ = ["echo", "surround", "reverse"]`
-        -   if `__all__` is not defined, `from package import *` runs any init code in, and imports names defined and submodules explicitly loaded by, `__init__.py`
-
-
-<a id="orgb46374a"></a>
-
-# System environment
-
--   get pwd: `os.getcwd()`
--   If a .env file is present in project, `pipenv shell` and `pipenv run` will automatically load it
-
-
-<a id="org2ce012c"></a>
+<a id="org5d39960"></a>
 
 # **PSA**
 
 -   `python<v> -m <command>` **whenever applicable and in doubt!!!**
 
 
-<a id="org4445f81"></a>
+<a id="org116a413"></a>
 
 # Jupyter
 
@@ -379,7 +359,7 @@ e.g. `from collections.abc import Collection`
 -   Uninstall kernel (note asymmetry with install command&#x2026;): `python3.11 -m ipykernel uninstall <name>`
 
 
-<a id="org6a35b0c"></a>
+<a id="org3e61c55"></a>
 
 # NumPy
 
@@ -388,7 +368,7 @@ e.g. `from collections.abc import Collection`
 -   Reduce: e.g. `np.logical_and.reduce(df)` reduces each column of df
 
 
-<a id="org79671f4"></a>
+<a id="org15e25ab"></a>
 
 # Pandas
 
@@ -410,14 +390,14 @@ e.g. `from collections.abc import Collection`
 -   `any()`: analogous to `all()`
 
 
-<a id="org09034cd"></a>
+<a id="org191e1d3"></a>
 
 # Plotting
 
 -   Seaborn boxplot: `showfliers=False` to omit outliers
 
 
-<a id="org061542a"></a>
+<a id="org8e730c6"></a>
 
 # Mod Cons
 
@@ -428,14 +408,14 @@ e.g. `from collections.abc import Collection`
 -   Automatic docstring generation in `sphinx-doc` Emacs minor mode: `C-c M-d`
 
 
-<a id="orgee8a954"></a>
+<a id="orga59284f"></a>
 
 # Typing
 
 -   Single dispatch for overloading with single signature
 
 
-<a id="org7ff3a49"></a>
+<a id="org9f421a4"></a>
 
 # Performance
 
@@ -449,17 +429,17 @@ e.g. `from collections.abc import Collection`
 -   `functools.cache` caches in memory the result of a function for a (each?) particular set of arguments
 
 
-<a id="orgf90d05f"></a>
+<a id="orgbdae5fc"></a>
 
 # Python environment management
 
 
-<a id="org8738b12"></a>
+<a id="orgc4895c8"></a>
 
 ## Update & install
 
 
-<a id="orgfea80b7"></a>
+<a id="orgf22cc2e"></a>
 
 ### On Ubuntu
 
@@ -480,18 +460,18 @@ Updating Python:
     sudo update-alternatives --config python3
 
 
-<a id="orgd28f6dc"></a>
+<a id="orgb3b85ce"></a>
 
 ### Mac OS
 
 `brew install python@3.11`
 
 
-<a id="orgd8a8dc7"></a>
+<a id="org495889a"></a>
 
 ## General
 
- <Global Python / package information: `python -m site`
+<Global Python / package information: `python -m site`
 Show user site packages directory: `python -m site --user-site`
 List user site packages (with versions): `pip list --user`
 Debian-style package info: `pip show <pkg>`
@@ -500,14 +480,14 @@ Upgrade: `pip install <pkg> -U`
 Uninstall along with sub-dependencies: `pip-autoremove pkg`
 
 
-<a id="orgda29aa7"></a>
+<a id="org96d9878"></a>
 
 ### Tool to consider when it gets better
 
 [pigar](<https://github.com/damnever/pigar>): generates requirements.txt based on imports
 
 
-<a id="org27300cf"></a>
+<a id="orga9d0d0a"></a>
 
 ## In code
 
@@ -515,28 +495,28 @@ Package location: `<pkg>.__path__`
 Module location: `<module>.__file__`
 
 
-<a id="orgdd0d291"></a>
+<a id="orgd737021"></a>
 
 ## Project-specific
 
-Create virtual env: `python[3] -m venv --system-site-packages [--clear] [--upgrade-deps] .venv` (clear to overwrite, upgrade-deps to upgrade `pip` and `setuptools`?) or `virtualenv .venv`
-Activate virtual env: `source .venv/<bindir>/activate` or `[py -m] pipenv shell`
-Install packages from requirements file: `py -m pip install -r requirements.txt`
-Show available package versions: `py -m pip install <pkg>==`
-Force reinstall in case of breaking changes, e.g. with `sqlsnakeoil`: `pip install --force-reinstall -v "SQLAlchemy==1.4.46"`
-Write (only local) requirements to requirements.txt: `python -m pip freeze -l`
-Deactivate virtual env: `exit` if `pipenv shell` used for activation. And on Windows, sorry&#x2026;?
-Upgrade package: `pip install <pkg> -U`
-Controlled burn workflow:
-
-1.  Install top-level requirements and keep manual list in e.g. `requirements-toplevel.txt`
-
-`pip freeze > requirements.txt`
-
-1.  Whenever an included package is no longer included:
-
-    pip freeze > uninstall.txt
-    pip uninstall -r uninstall.txt
-    pip install -r requirements-toplevel.txt
-    pip freeze > requirements.txt
+-   If a .env file is present in project, `pipenv shell` and `pipenv run` will automatically load it
+    -   Experience suggests steering clear of `pipenv`, `virtualenv`, and other snake oils though
+-   Create virtual env: `python[3] -m venv --system-site-packages [--clear] [--upgrade-deps] .venv` (clear to overwrite, upgrade-deps to upgrade `pip` and `setuptools`?) or `virtualenv .venv`
+-   Activate virtual env: `source .venv/<bindir>/activate` or `[py -m] pipenv shell`
+-   Install packages from requirements file: `py -m pip install -r requirements.txt`
+-   Show available package versions: `py -m pip install <pkg>==`
+-   Force reinstall in case of breaking changes, e.g. with `sqlsnakeoil`: `pip install --force-reinstall -v "SQLAlchemy==1.4.46"`
+-   Write (only local) requirements to requirements.txt: `python -m pip freeze -l`
+-   Deactivate virtual env: `exit` if `pipenv shell` used for activation. And on Windows, sorry&#x2026;?
+-   Upgrade package: `pip install <pkg> -U`
+-   Controlled burn workflow:
+    
+    1.  Install top-level requirements and keep manual list in e.g. `requirements-toplevel.txt`
+        `pip freeze > requirements.txt`
+    2.  Whenever an included package is no longer included:
+    
+        pip freeze > uninstall.txt
+        pip uninstall -r uninstall.txt
+        pip install -r requirements-toplevel.txt
+        pip freeze > requirements.txt
 
