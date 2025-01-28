@@ -1,3 +1,5 @@
+#+OPTIONS: \n:t
+
 * Config
 
 ~git config --list~
