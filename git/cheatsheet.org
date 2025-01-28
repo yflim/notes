@@ -1,0 +1,404 @@
+* Config
+
+~git config --list~
+
+Modifying .gitconfig:
+~git config --global color.ui false~
+yields:
+#+begin_src
+[color]
+        ui = true
+#+end_src
+
+
+
+* Adding & Committing
+
+to start tracking an existing project, go to the project’s directory and
+~git init~
+Add all files in .
+~git add .~
+~git status~
+To remove from tracking? (how to unstage?):
+~git rm --cached <file>...~
+commit: -v for verbose.
+~git commit -m "Initial commit"~
+Amend commit message (for unpushed last commit):
+~git ci --amend~
+~git cherry-pick commit~
+Cherry-pick all commits after A up to and including B:
+~git cherry-pick A..B~
+Cherry-pick all commits after A up to and including B:
+~git cherry-pick A^..B~
+
+apply changes to a specific file f in branch B to A:
+~git co A~
+~git co --patch B f~
+
+Listing tags:
+~git tag~
+Listing tags matching a pattern:
+~git tag -l "v1.8.5*"~
+Annotated tag on current commit:
+~git tag -a v1.4 -m "my version 1.4"~
+Lightweight tag on current commit:
+~git tag v1.4-lw~
+Push tags:
+~git push --tags~
+Find Git short SHA of tag in local repo:
+~git rev-parse --short v0.0.1~
+Find Git short SHA of tag in remote repo:
+~git ls-remote https://github.com/yourname/time-lib.git v0.0.1~
+
+
+* Rebasing
+
+
+rebase experiment onto (after) commits in master since most recent common ancestor:
+~git checkout experiment~
+~git rebase master~
+~git checkout master~
+~git merge experiment~
+
+rebase in interactive mode starting at commit preceding <commit>:
+~git rebase -i <commit>~1~
+rebase in interactive mode starting at commit after <commit>:
+~git rebase -i <commit>^~
+Following the above, to modify a specific commit, replace "pick" with "edit" in the relevant line, quit editor, then follow instructions.
+
+rebase last 4 commits in interactive mode
+~git rebase -i HEAD~4~
+
+rebase a topic branch based on one branch to another (specify topic if not on branch):
+~git rebase --onto newbase oldbase [topic]~
+
+
+* Diffs
+
+Show all differences between master & branch - everything on each that isn't on the other:
+~git diff [--stat] master branch~
+Show changes in branch from master since the common commit they diverged from - only what's on branch that isn't on master:
+~git diff [--stat] 8d585ea branch~
+Let git figure out the last common commit and do the diff off it:
+~git diff [--stat] master...erlang~
+
+Difference between modified copy and head:
+~git diff -- file HEAD~
+Difference between commit and head:
+~git diff commit-hash [HEAD] [filename]~
+Difference between commit and parent:
+~git diff commit-hash^ commit-hash [filename]~
+or
+~git diff commit-hash^! [filename]~
+Difference between commits 2 and 3 times back
+~git diff HEAD~3 HEAD~2 [filename]~
+
+Difference between version in tip of branch and specified file:
+~git diff te-staging -- filepath~
+Compare file between branches:
+~git diff branch1 branch2 path/to/file~
+
+Commits on remote branch only:
+~git log HEAD..origin/<branchname>~
+
+Show staged changes:
+~git diff --staged readme.txt~
+or:
+~git diff --cached~
+
+
+* Logging / History
+
+~git log [remotename/branchname]~
+Sort of equivalent to - git show SHA:
+~git log -p~
+Show commit history of file:
+~git log -- file~
+Show file history, using patches (-p) and showing only commits that are enough to explain how the file came to be (--):
+~git log -p -- file~
+Concise version of -p, showing additions & deletions:
+~git log --stat~
+Show history:
+~git log --graph --oneline --decorate --all~
+\* 594f90b (HEAD, tag: v1.0, master) reverted to old class name
+| \* 1834130 (erlang) added haskell
+| \* ab5ab4c added erlang
+|/
+\*   8d585ea Merge branch 'fix_readme'
+...
+List commits on oldbranch but not newbranch:
+~git log oldbranch ^newbranch~
+
+Show branches containing commit:
+~git branch --contains commit~
+
+Get last common commit of master and branch:
+~git merge-base master branch~
+
+Show parent hashes for a commit
+~git rev-list --parents -n 1 <commit>~
+
+Show the log message and textual diff. Also presents the merge commit in a special format as produced by git diff-tree --cc.
+~git show commit-hash~
+Concise show:
+~git show --stat commit-hash~
+Show commit that's parent of HEAD
+~git show HEAD^1~
+Show commit that's grandparent of HEAD
+~git show HEAD^2~
+Show commit that's great-grandparent of HEAD
+~git show HEAD~3~
+
+Show version of file at specific commit
+~git show REVISION:path/to/file~
+
+Search commits on all branches for file:
+~git log --all -- <path>~
+where, e.g. path = app/views/terms/edit.js.erb
+
+To find all commits where number of occurrences of "word" changed in file contents:
+~git log -Sword~
+To find all differences whose added or removed line matches /word/, not necessarily with the # of occurrences of /word/ changed:
+~git log -Gword~
+Or, to limit the above to a particular file, e.g.:
+~git log -S "string" -- <file-path>~
+And to show only the relevant changes in that file:
+~git log -S "string" -p -- <file-path>~
+
+Limit the commits output to ones with log message that matches the specified pattern (regular expression).
+~git log --grep=<pattern>~
+
+Show commits on date(s):
+~git log --after="2016-04-04" --before="2016-04-08"~
+
+Display version of file at particular commit:
+~git show <SHA> -- <path-to-file>~
+
+Show all commits, even those no longer accessible directly on branches:
+~git reflog~
+~git log -g~
+
+
+* Time Travel
+
+Reset file to particular commit:
+~git co <hash> <filename>~
+
+
+
+* Rewriting History
+
+Undo commit while retaining subsequent ones, but keep in log the revert (undoing):
+~git revert --strategy resolve <commit>~
+
+
+
+* Checking Out
+
+e.g. to fix an accidental delete:
+~git co -f~
+
+Create a remote-tracking branch:
+~git checkout -b [branch] [remotename]/[branch]~
+Shorthand for previous:
+~git checkout --track origin/branch~
+
+
+
+* Cloning
+
+~git clone url [dstdir]~
+Clone only one branch:
+~git clone [-b branchname] --single-branch remote-uri~
+
+
+
+* Pushing
+
+~git remote add origin git@github.com:<username>/first_app.git~
+~git push -u origin master~
+-u for upstream: track master if current branch doesn't already?
+
+Push all commits up to and including chosen commit to remote:
+~git push <remotename> <commit SHA>:<remotebranchname>~
+
+
+
+* Branching
+
+Show branches (-r for remote):
+~git branch [-r]~
+Ordered by most recent commit:
+~git for-each-ref --sort=-committerdate refs/heads/~
+
+Rename branch:
+On current branch:
+~git br -m <newname>~
+From another branch:
+~git br -m oldbranch newbranch~
+
+Create a remote-tracking branch:
+~git checkout -b [branch] [remotename]/[branch]~
+Shorthand for previous:
+~git checkout --track origin/branch~
+
+Track a remote branch with an existing local branch:
+~git br -u origin/branch~
+
+Create a new remote branch:
+~git co -b branch~
+~git push --set-upstream <remote-name> <local-branch-name>[:<remote-branch-name>]~
+
+Pull a remote branch:
+~git br remote_branch_name origin/remote_branch_name~
+~git co remote_branch_name~
+
+Delete a branch:
+~git br -d <branch>~
+
+Delete oldname remote branch and push newname local branch:
+~git push origin :oldname newname~
+
+
+
+* Fetching
+
+~git fetch [remote] [repo/branch]~
+~git fetch --all~
+~git fetch --dry-run~
+
+~git fetch origin~
+~git log --oneline main..origin/main~
+~git co main~
+~git mg origin/main~
+
+
+
+* Stashing
+
+
+Stash only a single file:
+~git stash -- file~
+
+~git stash list~
+~git stash apply [stash-name]~
+Apply only tries to apply the stashed work — you continue to have it on your stack.
+To remove, git stash drop with the name of the stash to remove:
+~git stash drop <stash-name>~
+
+Show stash contents:
+~git stash show -p <stash-name>~
+
+Clear stash:
+~git stash clear~
+
+
+
+* Recommended Workflow
+
+List branches:
+~git branch~
+Check out, create new branch, and switch to it:
+~git co -b modify-README~
+[- git branch]
+Rename file, in this example; result doesn't count as new file to git
+~git mv README.rdoc README.md~
+Make changes...
+Instead of git add ., -a to commit all modifications to existing files
+~git commit -a -m "Improve README"~
+~git co master~
+~git merge modify-README~
+Optionally delete branch:
+~git br -d modify-README~
+To abandon topic branch changes; -D deletes even if/though changes haven't been merged:
+~git br -D modify-README~
+~git push~
+
+
+
+* Undoing push to remote
+
+Approach 1:
+~git revert <commit-hash>~
+where <commit-hash> can be HEAD.
+Then commit and push, I assume?
+
+Approach 2:
+~git push -f origin <desired-commit-hash>:<branch-name>~
+or
+~git reset --hard <desired-commit-hash>~
+~git push origin -f~
+where <desired-commit-hash> can be HEAD^ (parent of HEAD).
+
+In case of commit being a merge: If 2nd approach doesn't work, trickier, need to Google,
+but hope the unlucky event doesn't happen to begin with.
+
+
+
+* Pull from remote and override local
+
+~git fetch remote~
+~git reset --hard remote/branch~
+
+
+
+* Help
+~git help <verb>~
+~git <verb> --help~
+~man git-<verb>~
+
+
+* Remotes
+
+View existing remotes (-v shows URLs used for fetch and push)
+~git remote [-v]~
+Add remote:
+~git remote add name url~
+Change the 'origin' remote's URL
+~git remote set-url origin https://github.com/user/repo2.git~
+Show remote info:
+~git remote show <remote-name>~
+Set local branch to push to tracked remote branch by default:
+~git cfg push.default tracking~
+Delete remote branch:
+~git push <remote_name> --delete <branch_name>~
+Prune all stale tracking branches:
+~git remote prune origin~
+
+
+
+* GitHub
+
+Set up new repo:
+~Create new repo on GitHub (click "+" drop-down menu on top right, then create without any files)~
+~cd project-dir~
+~git init~
+~git add .~
+~git ci -m "first commit"~
+~Copy repo URL~
+~git remote add origin remote-repo-url~
+~git remote -v~
+~git push -u origin master~
+
+
+
+* First Aid
+
+Recovery after losing a stash:
+Find object ID of dropped stash in output from stash pop
+~git stash pop~
+[...]
+Dropped refs/stash@{0} (2ca03e22256be97f9e40f08e6d6773c7d41dbfd1)]
+Get stash back (as a branch)
+~git br tmp 2ca03e~
+Convert this to a stash
+~git stash apply tmp~
+~git stash~
+
+Or, better yet(?), apply the stash from the hash value:
+~git stash apply 2ca03e~
+
+
+* Utils
+Get the current commit (I can't parse this ~rev-parse~ documentation; "porcelainish"... what the fuck is that???)
+~git rev-parse --short HEAD~
