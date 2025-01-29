@@ -18,7 +18,6 @@ to start tracking an existing project, go to the project’s directory and
 
 Add all files in .
 ~git add .~
-~git status~
 
 To remove from tracking? (how to unstage?):
 ~git rm --cached <file>...~
@@ -27,8 +26,10 @@ commit: -v for verbose.
 ~git commit -m "Initial commit"~
 
 Amend commit message (for unpushed last commit):
-~git ci --amend~
-~git cherry-pick commit~
+#+begin_src shell
+git ci --amend
+git cherry-pick commit
+#+end_src
 
 Cherry-pick all commits after A up to and including B:
 ~git cherry-pick A..B~
@@ -68,10 +69,10 @@ Find Git short SHA of tag in remote repo:
 
 rebase experiment onto (after) commits in master since most recent common ancestor:
 #+begin_src shell
-~git checkout experiment~
-~git rebase master~
-~git checkout master~
-~git merge experiment~
+git checkout experiment
+git rebase master
+git checkout master
+git merge experiment
 #+end_src
 
 rebase in interactive mode starting at commit preceding <commit>:
@@ -154,6 +155,7 @@ Show history:
 |/
 \*   8d585ea Merge branch 'fix_readme'
 ...
+
 List commits on oldbranch but not newbranch:
 ~git log oldbranch ^newbranch~
 
