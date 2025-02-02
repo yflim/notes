@@ -1,0 +1,360 @@
+#+TITLE: Cheatsheet
+
+
+* Miscellaneous
+- Reload module without restarting interpreter:
+  #+begin_src python
+  import importlib
+  importlib.reload(mod)
+  #+end_src
+
+
+* Packages & Modules
+
+** Modules
+- A module is a file containing Python definitions and statements.
+  - ~import module~ does not add definitions from ~module~ directly to current namespace
+  - ~from module import ...~ adds definitions directly
+  - ~as~ can also be used with ~from ...~, e.g. ~from module import fn as function~
+  - More import examples:
+    ~import foo.bar~
+    ~from foo import bar~
+    ~from foo import *~
+
+** Packages
+- A package is a (possibly nested) collection of modules
+- ~__init__.py~ is required to make Python treat the directory as a package
+  - Invoked when the package or a module in the package is imported
+  - Can be empty, execute init code for the package, or define ~__all__~
+    - ~__all__~ lists module names that should be imported by (the discouraged) ~from package import *~, e.g.
+      ~__all__ = ["echo", "surround", "reverse"]~
+    - if ~__all__~ is not defined, ~from package import *~ runs any init code in, and imports names defined and submodules explicitly loaded by, ~__init__.py~
+- Importing modules from subpackages e.g.:
+  ~import pkg.sub_pkg1.mod1~
+  ~from pkg.sub_pkg2 import mod3~
+
+
+* System utils
+
+- get pwd: ~os.getcwd()~
+
+#+begin_src python
+import os
+
+# Run Unix shell commands
+os.system('ls')
+
+# List files in directory
+for f in os.listdir('data'):
+    if isfile(f'data/{f}'):
+        print(f)
+#+end_src
+
+
+* Types
+- Check type: ~isinstance(x, str)~
+
+
+* Data
+
+** Pandas
+
+- Sorting: ~sort_index~, ~sort_values~
+
+- Trim df or series values at lower or upper threshold (like min() or max()):
+~df.clip(lower=None, upper=None, axis=None, inplace=False, *args, **kwargs)~
+
+- Cumulative max/min over df or series axis:
+~df.cummax(axis=None, skipna=True, *args, **kwargs)~
+
+- Drop specified labels from rows or columns (rows in example):
+~test_dataset = dataset.drop(train_dataset.index)~
+
+- Drop column from dataframe:
+~train_labels = train_features.pop('MPG')~
+
+- Drop NaNs from Series or Dataframe:
+~df.dropna(axis=0, how='any', thresh=None, subset=None, inplace=False)~
+
+- Return whether any element is True in Series or Dataframe:
+~df.any(axis=0, bool_only=None, skipna=True, level=None, **kwargs)~
+
+- Sample randomly from dataframe:
+~train_dataset = dataset.sample(frac=0.8, random_state=0)~
+
+- Negation: ~\~~, e.g. ~\~a.isin(b)~
+
+- Multi-indexes:
+  - Returns Series with index levels route_id, trip_id
+    ~route_trip_stop_counts = stop_times.groupby('route_id').trip_id.value_counts()~
+  - Get index level values:
+    ~route_trip_stop_counts.index.get_level_values(0)~
+  - Drop index level 1 i.e. trip_id, then get get variance for each route_id:
+    ~route_trip_stop_counts.droplevel(1).groupby('route_id').var()~
+  - Reset index:
+    - Get df with columns route_id, trip_id in place of the original index:
+       ~route_trip_stop_counts.rename('stop_count').reset_index()~
+    - Get df with route_id as index and additional column trip_id:
+       ~route_trip_stop_counts.rename('stop_count').reset_index(level='trip_id')~
+
+- Groupby
+  - ~df.groupby('A')~ is just syntactic sugar for ~df.groupby(df['A'])~
+  #+begin_src python
+  import pandas as pd
+
+  df = pd.DataFrame(
+    [
+        ("bird", "Falconiformes", 389.0),
+        ("bird", "Psittaciformes", 24.0),
+        ("mammal", "Carnivora", 80.2),
+        ("mammal", "Primates", np.nan),
+        ("mammal", "Carnivora", 58),
+    ],
+    index=["falcon", "parrot", "lion", "monkey", "leopard"],
+    columns=("class", "order", "max_speed"))
+  return df
+  # default is axis=0
+  grouped = df.groupby("class")
+  grouped = df.groupby("order", axis="columns")
+  grouped = df.groupby(["class", "order"])
+  #+end_src
+
+  #+RESULTS:
+
+- [[https://pandas.pydata.org/docs/user_guide/window.html][Windowing API]]
+- [[https://pandas.pydata.org/docs/user_guide/timeseries.html#resampling][Resampling API]]
+
+
+* Visualisation
+
+** Seaborn
+
+Draw a plot of two variables with bivariate and univariate graphs (e.g. scatterplot with histograms):
+~sns.jointplot(data=df, x='x', y='y')~
+
+
+* Jupyter
+
+** Help
+- Function help: inside parentheses, hit ~Shift+Tab~
+
+** Editing
+- Change cell type: to markdown ~m~, to code ~y~
+- Clear cell output: ~Ctrl+o~
+- Indent ~Cmd+]~
+- Dedent ~Cmd+[~
+
+** Etc.
+- Command palette (listing commands with shortcuts): ~Cmd+Shift+p~
+
+
+* "Functional programming"
+- Call method on object or module: ~(getattr(obj, attr_name_str))~
+  - E.g.:
+    #+begin_src python
+    (getattr('', 'join'))(['a', 'b', 'c'])
+    #-> 'abc'
+    (getattr(chile1_df[1], 'le')(pd.Timestamp('2022-03-01')) & (chile1_df[0] == 'SOSP')).sum()
+    #-> ...
+    #+end_src
+
+** Keyword arguments & Arbitrary argument lists
+- E.g. ~getattr(df[col], op)(pd.Timestamp(*ts_args, **ts_kwargs))~
+
+** Unpacking argument lists
+- I.e. sort of the reverse of what happens in the preceding section/example, e.g.
+  #+begin_src python
+  args = [3, 6]
+  list(range(*args))
+  #+end_src
+
+
+* Data types
+
+** Builtins
+
+#+begin_src python
+import builtins
+something = (0,0)
+match type(something):
+      case builtins.list:
+          print("list")
+      case builtins.tuple:
+          print("tuple")
+#+end_src
+
+** Collections
+e.g. ~from collections.abc import Collection~
+
+** Type hints
+- Multiple types:
+  #+begin_src python
+  def fn(arg: int | str = ''):
+      return arg
+  #+end_src
+- ~Pandera~ for Pandas (or more general?) type hinting
+
+
+* Gotchas
+
+- ~list()~ apparently mutates its input when given a map.
+  - When called again on the same variable without doing anything else to the latter in between, returns an empty result
+
+- ???!!!???
+  #+begin_src python
+  None == None
+  # True
+  None != None
+  # False
+  ## BUT!!!
+  pd.Series([None] * 10) != pd.Series([None] * 10)
+  # 0    True
+  # 1    True
+  # 2    True
+  dtype: bool
+  pd.Series([None] * 10) == pd.Series([None] * 10)
+  # 0    False
+  # 1    False
+  # 2    False
+  #+end_src
+
+
+* Help
+- Help: ~help(module)~, ~help(fn)~
+- Display the printable representation of an object: ~repr()~
+
+
+* TODO Integrate into the above
+
+* Jupyter
+- Run on WSL: ~python<-v> -m jupyter notebook --no-browser~
+- ~jupyter kernelspec list~
+- ipynb <-> py conversion:
+  ~jupytext --to notebook notebook.py~
+  ~jupytext --to py notebook.ipynb~
+- Add a kernel manually else Jupyter will clobber any existing kernel for any pre-existing venv with the same name (i.e. sane practice): ~python3.11 -m ipykernel install --user --name <non-confusing-name-for-jupyter>~
+- Uninstall kernel (note asymmetry with install command...): ~python3.11 -m ipykernel uninstall <name>~
+
+* NumPy
+- Length of each string in an array: ~np.char.str_len(['a', 'bc', 'def'])~
+- Element-wise truth value of ~x1~ and ~x2~: ~np.logical_and(x1, x2)~
+- Reduce: e.g. ~np.logical_and.reduce(df)~ reduces each column of df
+
+* Pandas
+- Merge two dataframes with overlapping index, keeping column values from left DataFrame
+  - Option 1 (assuming date is already set as index): ~df1.combine_first(df2)~
+  - Option 2: ~pd.concat([df1, df2]).drop_duplicates(["date"], keep="first", ignore_index=True)~
+- When in doubt, always ~.values~ instead of losing more perfectly good hours of life to bullshit state-
+  (index-) instead of value-based operations
+- Modify series in place: ~s.update([4,5,6])~
+- Define order for series, e.g. ~df['m'] = pd.Categorical(df['m'], ["March", "April", "Dec"])~
+- Count distinct values:
+  #+begin_src python
+  port_r_df.port_name.nunique()
+  # or
+  port_r_df.groupby(['port_id']).port_name.nunique()
+  #+end_src
+- True if all elements within a series or along a dataframe axis are non-zero, not-empty or not-False, e.g.:
+  - Column-wise values all return true: ~df.all()~
+  - Row-wise values all return true: ~df.all(axis=1)~
+- ~any()~: analogous to ~all()~
+
+
+* Plotting
+- Seaborn boxplot: ~showfliers=False~ to omit outliers
+
+* Mod Cons
+- Reload module (etc.):
+  #+begin_src python
+  from importlib import reload
+  reload(module_name_or_alias)
+  #+end_src
+- Automatic docstring generation in ~sphinx-doc~ Emacs minor mode: ~C-c M-d~
+
+
+* Typing
+- Single dispatch for overloading with single signature
+
+
+* Performance
+- ~timeit~: measure execution time of arbitrary statement
+  - in REPL session, need to set ~globals~ to current set of global vars with ~globals()~
+  - can limit number of executions with ~number~
+  #+begin_src python
+  import timeit
+  timeit.timeit('fibonacci(35)', globals=globals(), number=1)
+  #+end_src
+- ~functools.cache~ caches in memory the result of a function for a (each?) particular set of arguments
+
+
+* Python environment management
+
+** *PSA*
+- ~python<v> -m <command>~ where ~command~ may be ~pip~ and so on *whenever applicable and in doubt!!!*
+
+** Update & install
+
+*** On Ubuntu
+Updating Python:
+#+begin_src bash
+sudo apt install software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa
+# Adding a repository will usually trigger an update. If not, run manually:
+sudo apt update
+apt list | grep python3.11
+sudo apt install python3.11
+# Check:
+python3.11 -V
+# Create symbolic links to python 3 binaries, e.g.
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+# Choose default:
+sudo update-alternatives --config python3
+#+end_src
+
+*** Mac OS
+~brew install python@3.11~
+
+** General
+
+- The following don't work or stop working somehow on Mac OS
+  - <Global Python / package information: ~python -m site~
+  - Show user site packages directory: ~python -m site --user-site~
+    - Note: I've experienced this giving information conflicting with the above...
+- On Mac OS:
+  ~ls /usr/local/bin/py[thon]*~
+  ~ls /usr/local/lib/python*~
+List user site packages (with versions): ~pip list --user~
+Debian-style package info: ~pip show <pkg>~
+User package installation (which is default, but just to be safe): ~pip install --user <pkg>~
+Upgrade: ~pip install <pkg> -U~
+Uninstall along with sub-dependencies: ~pip-autoremove pkg~
+
+*** Tool to consider when it gets better
+[pigar](https://github.com/damnever/pigar): generates requirements.txt based on imports
+
+** In code
+Package location: ~<pkg>.__path__~
+Module location: ~<module>.__file__~
+
+** Project-specific
+- If a .env file is present in project, ~pipenv shell~ and ~pipenv run~ will automatically load it
+  - Experience suggests steering clear of ~pipenv~, ~virtualenv~, and other snake oils though
+- Create virtual env: ~python[3] -m venv --system-site-packages [--clear] [--upgrade-deps] .venv~ (clear to overwrite, upgrade-deps to upgrade ~pip~ and ~setuptools~?) or ~virtualenv .venv~
+- Activate virtual env: ~source .venv/<bindir>/activate~ or ~[py -m] pipenv shell~
+- Install packages from requirements file: ~py -m pip install -r requirements.txt~
+- Show available package versions: ~py -m pip install <pkg>==~
+- Force reinstall in case of breaking changes, e.g. with ~sqlsnakeoil~: ~pip install --force-reinstall -v "SQLAlchemy==1.4.46"~
+- Write (only local) requirements to requirements.txt: ~python -m pip freeze -l~
+- Deactivate virtual env: ~exit~ if ~pipenv shell~ used for activation. And on Windows, sorry...?
+- Upgrade package: ~pip install <pkg> -U~
+- Controlled burn workflow:
+  1. Install top-level requirements and keep manual list in e.g. ~requirements-toplevel.txt~
+     ~pip freeze > requirements.txt~
+  2. Whenever an included package is no longer included:
+  #+begin_src bash
+  pip freeze > uninstall.txt
+  pip uninstall -r uninstall.txt
+  pip install -r requirements-toplevel.txt
+  pip freeze > requirements.txt
+  #+end_src
