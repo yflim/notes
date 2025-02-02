@@ -1,0 +1,811 @@
+#+title: Clojure cheatsheet
+
+
+* Tools (CLI)
+
+- Show classpath: ~clojure -Spath~
+- Find dependency versions:
+~clj -X:deps find-versions :lib clojure.java-time/clojure.java-time~
+- Write dependency expansion to ~trace.edn~: ~clj -Strace~
+- Get full help from the docstrings for any installed tool, e.g.:
+~clojure -A:deps -Tantq help/doc~
+- Run build function, e.g. ~clj -T:build install~
+- Create new library: ~clojure -Tclj-new lib :name myname/mylib~
+- Dependency with local location:
+  #+begin_src clojure
+  :override-deps {techascent/tech.ml.dataset
+                  {:local/root "/Users/yiffle/programming/code/cljc/clj/tech.ml.dataset"}}
+  #+end_src
+
+
+* Basics / Miscellanea
+
+- Unused argument: _, e.g. ~(fn [_] do-something)~
+
+- Anonymous functions:
+  #+begin_src clojure
+  (fn [msg] (println msg))
+  ;; equivalent:
+  #(println %)
+  ;; positional args: %1, %2, etc.
+  #+end_src
+
+- Useful functions:
+  - ~name~: Returns the name String of a string, symbol or keyword, e.g.
+
+    #+begin_src clojure
+    (name :a)
+    (name "a")
+    (name 'a)
+    #+end_src
+
+  - ~namespace~: Returns the namespace string of a symbol or keyword
+
+- Using a main
+  - With entry function ~run~:
+  ~$ clj -X hello/run~
+  - Or using entry function ~-main~
+  - Launching a script:
+    ~$ clj -M /path/to/myscript.clj arg1 arg2 arg3~, where
+    ~*command-line-args*~ => ~("arg1" "arg2" "arg3")~
+  - [[https://book.babashka.org/][Babashka?]]
+
+- ~*clojure-version*~
+
+- ~#_~ (optionally followed by a space) tells the reader to ignore the next form completely.
+  - Can be stacked to omit multiple forms
+
+- Equality: ~=~ is a value-based operation, while ~identical?~ tests whether its arguments are the same object
+  - Gotcha: this seems subject to some subtleties that produce apparent inconsistencies (see below)
+    #+begin_src clojure
+    (identical? [1] [1])
+    ;; => false
+    (= [1] [1])
+    ;; => true
+    (= #{1} '(1))
+    ;; => false
+    (= #{1} [1])
+    ;; => false
+    (= [1] '(1))
+    ;; => true
+    #+end_src
+
+- Value of last evaluated expression: ~*1~. Analogously, ~*2~ and ~*3~ (no higher).
+
+- Shell commands:
+#+begin_src clojure
+(require '[clojure.java.shell :as sh])
+(sh/sh "ls" "-aul")
+#+end_src
+
+** Help
+- Print public vars (including functions) in a namespace: ~(dir namespace)~
+- All namespaces: ~(all-ns)~
+- All public definitions in all currently-loaded namespaces matching regex or stringable thing: ~(apropos str-or-pattern)~
+- View source code for ~sym~: ~(source sym)~
+
+
+* Syntax
+- ~..~
+  E.g.: ~(.. System (getProperties) (get "os.name"))~
+  expands to ~(. (. System (getProperties)) (get "os.name"))~
+
+
+
+* Strings
+- ~re-quote-replacement~: escape special characters in literal replacement for a pattern match in ~replace~ or ~replace-first~
+  #+begin_src clojure
+  (require '[clojure.string :as s])
+  (def s "May 2018, June 2019")
+  (s/replace s #"May|June" "10$") ;; IllegalArgumentException
+  (s/replace s #"May|June" (s/re-quote-replacement "10$ in"))
+  #+end_src
+
+
+* Collections
+
+- ~find~: returns map entry for given key, or ~nil~ if absent
+#+begin_src clojure
+(find {:a 1} :a)
+;; => [:a 1]
+(val (find {:a 1} :a))
+;; => 1
+(type (find {:a 1} :a))
+;; => clojure.lang.MapEntry
+(key (find {:a 1} :a))
+;; => :a
+#+end_src
+
+- ~vector~ vs. ~vec~
+#+begin_src clojure
+(vector '(1 2 3))
+;; => [(1 2 3)]
+(vec '(1 2 3))
+;; => [1 2 3]
+#+end_src
+
+- ~replace~: ~(replace smap)~, ~(replace smap coll)~
+Note: 1. Also applies to sequences. 2. similarities with and differences from ~map~
+#+begin_src clojure
+(replace [10 9 8 7 6] [0 2 4])
+;; [10 8 6]
+(replace {2 :two, 4 :four} [4 2 3 4 5 6 2])
+;; [:four :two 3 :four 5 6 :two]
+(map {2 :two, 4 :four} [4 2 3 4 5 6 2])
+;; (:four :two nil :four nil nil :two)
+(replace [] [0])
+;; [0]
+(map [] [0])
+;; IndexOutOfBoundsException ...
+#+end_src
+
+- ~index~: ~(index xrel ks)~
+#+begin_src clojure
+(require '[clojure.set :refer [index]])
+(def weights #{ {:name 'betsy :weight 1000}
+                {:name 'jake :weight 756}
+                {:name 'shyq :weight 1000} })
+(index weights [:weight])
+;; {{:weight 756}  #{{:name jake, :weight 756}},
+;; {:weight 1000} #{{:name shyq, :weight 1000}
+;;                  {:name betsy, :weight 1000}}}
+#+end_src
+
+- ArrayMap a.k.a. array-map, e.g. ~(array-map :a 10)~
+  - Maintains key order. Linear lookup performance, "only suitable for /very small/ maps".
+  - Only maintains order when un-"modified". Subsequent assoc-ing "eventually" causes it to "become" a hash-map.
+
+- ~into~: ~(into)~, ~(into to)~, ~(into to from)~, ~(into to xform from)~
+Conjoin all items of ~from~ into ~to~, e.g.
+#+begin_src clojure
+(into (sorted-map) [{:a 1} {:c 3} {:b 2}])
+;; => {:a 1, :b 2, :c 3}
+(into [] {1 2, 3 4})
+;; => [[1 2] [3 4]]
+(into '() [1 2 3])
+;; => (3 2 1)
+#+end_src
+
+- ~reduced~: ~(reduced x)~ wraps x such that a ~reduce~ terminates with the value x
+
+- ~subvec~: ~(subvec v start)~ ~(subvec v start end)~
+#+begin_src clojure
+(subvec [1 2 3 4 5 6 7] 2)
+;; => [3 4 5 6 7]
+(subvec [1 2 3 4 5 6 7] 2 4)
+;; => [3 4]
+#+end_src
+
+- ~zipmap~: ~(zipmap keys vals)~
+#+begin_src clojure
+(zipmap [:a :b :c :d :e] [1 2 3 4 5])
+;; {:a 1, :b 2, :c 3, :d 4, :e 5}
+(zipmap [:a :b :c] [1 2])
+;; {:a 1, :b 2}
+(zipmap [:a :b :c] (repeat nil))
+;; {:a nil, :b nil, :c nil}
+#+end_src
+
+** Sequences
+
+- ~repeat~: ~(repeat x)~, ~(repeat n x)~. Note: result is lazy.
+#+begin_src clojure
+(take 5 (repeat "x"))
+;; => ("x" "x" "x" "x" "x")
+(repeat 5 "x")
+;; => ("x" "x" "x" "x" "x")
+#+end_src
+
+- ~list*~
+#+begin_src clojure
+(list* 1 2 [3 4])
+;; => (1 2 3)
+;; Corner cases:
+(list* nil [1 2])
+;; => (nil 1 2)
+(list* 1 nil)
+;; => (1)
+(list* () [1 2])
+;; => (() 1 2)
+(list* 1 ())
+;; => (1)
+#+end_src
+
+- ~map-indexed~
+
+** Sets
+~select~: ~(select pred xset)~
+
+** TODO walk, pre-walk, post-walk
+
+
+* Transients
+- Vectors, hash-maps, and hash-sets supported
+- ~(transient ds)~: O(1) creation from persistent data structures
+- Shares structure with persistent source
+- Interim return values must be returned
+- ~(persistent! ds)~: O(1) creation of persistent data structure when done building results
+  - Transient must not be used after: all operations will throw exceptions.
+- Same code structure as functional version: ~conj!~, ~pop!~, ~assoc!~, ~dissoc!~, ~disj!~
+
+
+* Functions beget functions
+
+- ~apply~
+  #+begin_src clojure
+  (def strs ["a" "b" "c"])
+  (apply str strs) ;; => (str "a" "b" "c")
+  ;; => "abc"
+  (apply str 1 strs) ;; => (str 1 "a" "b" "c")
+  ;; => "1abc"
+  #+end_src
+
+- ~comp~: ~((comp f g) x)~ => ~(f (g x))~
+
+- ~juxt~ (possibly abusing notation): ((juxt a b c) & args) => [(a & args) (b & args) (c & args)]
+  #+begin_src clojure
+  ((juxt str #(* 2 %)) 1)
+  ;; => ["1" 2]
+  ((juxt #(println %1 %2) #(* %1 %2)) 1 2)
+  1 2
+  ;; => [nil 2]
+  #+end_src
+
+- ~partial~, e.g.
+  #+begin_src clojure
+  (defn add [x y] (+ x y))
+  (def add-5 (partial add 5))
+  (add-5 10)
+  ;; => 15
+  #+end_src
+
+
+* Destructuring
+
+** Sequential destructuring
+#+begin_src clojure
+(let [[a _ b _] '(1 2 3 4)] (println _))
+;; => 4
+
+(def numbers [1 2 3 4 5])
+(let [[x & remaining :as all] numbers]
+  (apply prn [remaining all]))
+;; => (2 3 4 5) [1 2 3 4 5]
+
+(def my-line [[5 10] [10 20]])
+(let [[[a b :as group1] [c d :as group2]] my-line]
+  (println a b group1)
+  (println c d group2))
+;; => 5 10 [5 10]
+;; => 10 20 [10 20]
+#+end_src
+
+** Associative destructuring
+
+#+begin_src clojure
+(def my-map {:a "A" :b "B" :c 3 :d 4})
+(let [{a :a, x :x, :or {x "Not found!"}, :as all} my-map]
+  (println "I got" a "from" all)
+  (println "Where is x?" x))
+;= I got A from {:a "A" :b "B" :c 3 :d 4}
+;= Where is x? Not found!
+
+(def client {:name "Super Co."
+             :location "Philadelphia"
+             :description "The worldwide leader in plastic tableware."})
+(let [{:keys [name location description]} client]
+  (println name location "-" description))
+;= Super Co. Philadelphia - The worldwide leader in plastic tableware.
+
+(def string-keys {"first-name" "Joe" "last-name" "Smith"})
+(let [{:strs [first-name last-name]} string-keys]
+  (println first-name last-name))
+;= Joe Smith
+
+(def symbol-keys {'first-name "Jane" 'last-name "Doe"})
+(let [{:syms [first-name last-name]} symbol-keys]
+  (println first-name last-name))
+;= Jane Doe
+
+(def multiplayer-game-state
+  {:joe {:class "Ranger"
+         :weapon "Longbow"
+         :score 100}} ;...
+  )
+(let [{{:keys [class weapon]} :joe} multiplayer-game-state]
+  (println "Joe is a" class "wielding a" weapon))
+; or
+(let [{:joe/keys [class weapon]} multiplayer-game-state]
+  (println "Joe is a" class "wielding a" weapon))
+;= Joe is a Ranger wielding a Longbow
+#+end_src
+
+*** Keyword arguments
+
+#+begin_src clojure
+(defn configure [val options]
+  (let [{:keys [debug verbose] :or {debug false, verbose false}} options]
+    (println "val =" val " debug =" debug " verbose =" verbose)))
+(configure 12 {:debug true})
+;;val = 12  debug = true  verbose = false
+
+(defn configure [val & {:keys [debug verbose]
+                        :or {debug false, verbose false}}]
+  (println "val =" val " debug =" debug " verbose =" verbose))
+(configure 10)
+;;val = 10  debug = false  verbose = false
+(configure 12 :verbose true :debug true)
+;;val = 12  debug = true  verbose = true
+(configure 12 {:verbose true :debug true})
+;;val = 12  debug = true  verbose = true
+(configure 12 :debug true {:verbose true})
+;;val = 12  debug = true  verbose = true
+#+end_src
+
+*** Namespaced keywords
+
+#+begin_src clojure
+(def human {:person/name "Franklin"
+            :person/age 25
+            :hobby/hobbies "running"})
+(let [{:keys [hobby/hobbies]
+       :person/keys [name age]
+       :or {age 0}} human]
+  (println name "is" age "and likes" hobbies))
+;= Franklin is 25 and likes running
+
+(let [{:person/keys [age]
+       hobby-hobbies :hobby/hobbies
+       person-name :person/name} human]
+  (println person-name "is" age "and likes" hobby-hobbies))
+;= Franklin is 25 and likes running
+
+(require '[person :as p])
+(let [person {::p/name "Franklin", ::p/age 25}
+      {:keys [::p/name ::p/age]} person]
+  (println name "is" age))
+;= Franklin is 25
+#+end_src
+
+*** Nested maps
+#+begin_src clojure
+(def john-smith {:f-name "John"
+                 :l-name "Smith"
+                 :phone "555-555-5555"
+                 :address {:street "452 Lisp Ln."
+                           :city "Macroville"
+                           :state "Kentucky"
+                           :zip "81321"}
+                 :hobbies ["running" "hiking" "basketball"]
+                 :company "Functional Industries"})
+(defn print-contact-info
+  [{:keys [f-name l-name phone company]
+    {:keys [street city state zip]} :address
+    [fav-hobby second-hobby] :hobbies}] ...)
+#+end_src
+
+
+* Doing
+
+ - ~doseq~: ~(doseq seq-exprs & body)~
+   - Repeatedly executes body with bindings and filterings as provided by "for". Does not retain head of sequence. Returns nil.
+   #+begin_src clojure
+   ;; Multiplies every x by every y. Prints -1, -2, -3, 0, ...
+   (doseq [x [-1 0 1]
+           y [1  2 3]]
+     (prn (* x y)))
+   ;; Prints 1, 4, 9
+   (doseq [[x y] (map list [1 2 3] [1 2 3])]
+     (prn (* x y)))
+   ;; Prints 3, 8
+   (doseq [[[a b] [c d]] (map list (sorted-map :1 1 :2 2) (sorted-map :3 3 :4 4))]
+     (prn (* b d)))
+   ;; Prints :1 1, :2 2, :3 3
+   (doseq [[k v] {:1 1 :2 2 :3 3}]
+     (prn k v))
+   #+end_src
+   where
+   #+begin_src clojure
+   (map list [1 2 3] [1 2 3])
+   ;; => ((1 1) (2 2) (3 3))
+   (map list (sorted-map :1 1 :2 2) (sorted-map :3 3 :4 4))
+   ;; => (([:1 1] [:3 3]) ([:2 2] [:4 4]))
+   #+end_src
+
+ - ~dorun~: Force side effects in producing lazy sequences. Does not retain head of sequence; returns nil.
+   #+begin_src clojure
+   (dorun 5 (repeatedly #(println "hi")))
+   ;; prints "hi" 6 times
+   (let [x (atom 0)]
+     (dorun (take 10 (repeatedly #(swap! x inc))))
+     @x)
+   ;; => 10
+   (dorun (map #(println "hi" %) ["mum" "dad" "sister"]))
+   hi mum
+   hi dad
+   hi sister
+   ;; => nil
+   #+end_src
+
+ - ~doall~: Like ~dorun~ except the sequence head is retained and returned; entire seq kept in memory. E.g.:
+   ~(doall (map println [1 2 3]))~
+   1
+   2
+   3
+   ;; => (nil nil nil)
+
+
+* Branching
+
+- ~when~, ~when-not~, ~when-let~, ~when-first~
+
+- ~cond~: ~(cond & clauses)~
+  Clauses: a set of test-expr pairs. Returns the expr corresponding to the first logical-true test. E.g.
+  #+begin_src clojure
+  (defn pos-neg-or-zero
+  "Determines whether or not n is positive, negative, or zero"
+  [n]
+  (cond
+    (< n 0) "negative"
+    (> n 0) "positive"
+    :else "zero"))
+  #+end_src
+
+- ~condp~: ~(condp pred expr & clauses)~
+  Each clause takes either form:
+  ~text-expr result-expr~
+  ~text-expr :>> result-fn~
+  - For each clause, ~(pred test-expr expr)~ is evaluated.
+    - Binary clause matches: result-expr is returned.
+    - Ternary clause matches: the result of calling result-fn, a unary function, with the result of the predicate is returned.
+  - E.g.:
+    #+begin_src clojure
+    (condp some [1 2 3 4]
+      #{0 6 7} :>> inc
+      #{4 5 9} :>> dec
+      #{1 2 3} :>> #(+ % 3)
+      42 ; default)
+    ;;=> 3
+    #+end_src
+
+- ~cond->~: ~(cond-> expr & clauses)~
+  where clauses is a set of test-form pairs. Threads expr through each form corresponding to a test evaluating to true. Does not short-circuit after the first true test.
+  #+begin_src clojure
+  (cond-> 1          ; we start with 1
+    true inc       ; the condition is true so (inc 1) => 2
+    false (* 42)   ; the condition is false so the operation is skipped
+    (= 2 2) (* 3)) ; (= 2 2) is true so (* 2 3) => 6
+  ;;=> 6
+  #+end_src
+
+- ~case~: ~(case e & clauses)~
+  where a clause can take either form:
+  ~test-constant result-expr~
+  ~(test-constant1 ... test-constantN)  result-expr~
+  where e is matched (in constant time, unlike ~cond~ and ~condp~) against each test-constant in the latter. A single default expression can follow the clauses; if none is provided and no clause matches, an IllegalArgumentException is thrown.
+  - The test-constants are not evaluated and must be compile-time literals, and need not be quoted.
+  - E.g.
+  #+begin_src clojure
+  (let [myseq '(1 2)]
+  (case myseq
+        (()) "empty seq"
+        ((1 2)) "my seq"
+        "default"))
+  ;;=> "my seq"
+  (let [myseq '(1 2)]
+  (case myseq
+        () "empty seq"
+        '(1 2) "my seq"
+        "default"))
+  ;; => "my seq"
+  (let [myvec [1 2]]
+    (case myvec
+          [] "empty vec"
+          (vec '(1 2)) "my vec"
+          "default"))
+  ;;=> "default"
+  #+end_src
+
+
+* Reading clojure characters
+
+** Symbols and Vars
+
+A Symbol (can) references a Var, which holds/represents a value (which may be a function).
+
+- Symbols
+#+begin_src clojure
+(defn squared [x] (* x x))  ;; evaluates to a Var
+;; => #'user/squared
+(def n 2)   ; evaluates to a Var
+;; => #'user/n
+(type 'squared)
+;; => clojure.lang.Symbol
+(type 'n)
+;; => clojure.lang.Symbol
+(type 'random-symbol)
+;; => clojure.lang.Symbol
+'squared
+;; => squared
+(symbol "squared")  ;; takes string, keyword, or Var argument
+;; => squared
+#+end_src
+
+- Vars
+#+begin_src clojure
+(resolve 'squared)
+;; => #'user/squared
+(var squared)
+;; => #'user/squared
+#'squared   ;; shorthand
+;; => #'user/squared
+(type (var squared))
+;; => clojure.lang.Var
+squared
+;; => #function[user/squared]
+@(resolve 'squared)
+;; => #function[user/squared]
+(type @(resolve 'squared))
+;; => user$squared
+(@(resolve (symbol "squared")) 2)   ;; Deref (with @) the Var named by the Symbol squared
+;; => 4
+((resolve (symbol "squared")) 2)    ;; A Var asked to act as a function defers to its value
+;; => 4
+#+end_src
+
+- Symbol can be used as a function: it looks itself up in its argument
+  ~('foo {'foo 2})~ is equivalent to ~(get {'foo 2} 'foo)~
+
+- Careful: ~#'sym~, ~(var sym)~, and ~(resolve sym)~ are *not* equivalent!
+  #+begin_src clojure
+  (defn deref-fn-sym [sym] @#'sym)
+  ;; Syntax error compiling var at ... Unable to resolve var: sym in this context
+  (defn deref-fn-sym [sym] @(var sym))
+  ;; Syntax error compiling var at ... Unable to resolve var: sym in this context
+  (defn deref-fn-sym [sym] @(resolve sym))
+  ;; => #'user/deref-fn-sym
+  #+end_src
+
+
+** ~^~: Metadata
+
+- A map of values that can be attached to various forms
+- Provides extra information; can be used for documentation, compilation warnings, typehints, and other features
+#+begin_src clojure
+(def ^{:debug true} five 5)
+;; or the equivalent shorthand
+(def ^:debug five 5)
+(meta #'five)
+;; => {:ns #<Namespace user>, :name five, :column 1, :debug true, ...}
+
+;; Metadata is attached to the form that follows it
+(def m ^:hi [1 2 3])
+(meta (var m))
+;; => {:line 35, :column 8, ... :name m, :ns #namespace[user]}
+(meta m)
+;; => {:hi true}
+
+;; Type hint
+(def ^Integer five 5)
+(meta #'five)
+;; => {:ns #<Namespace user>, ... :tag java.lang.Integer}
+#+end_src
+
+
+* Built-in macros
+
+- ~some->~: ~(some-> expr & forms)~
+  When ~expr~ is not nil, threads it into the first form (via ->), and when that result is not nil, through the next etc.
+  #+begin_src clojure
+  (-> {:a 1} :b inc)
+  ;; NullPointerException   clojure.lang.Numbers.ops (Numbers.java:942)
+  (some-> {:a 1} :b inc)
+  ;; nil
+  #+end_src
+
+- Return an expression, e.g.
+  #+begin_src clojure
+  (defmacro ret-export-db [approach-fn conn path]
+    `(~approach-fn @~conn ~path))
+  (ret-export-db export-db-tc conn "/test/path.txt")
+  #+end_src
+  Invoking ~ret-export-db~ as above evaluates to ~(export-db-tc @conn "/test/path.txt")~
+
+- ~doto~: ~(doto x & forms)~
+  Evaluates ~x~ then calls all the methods and functions invoked in ~forms~ with the value of ~x~ supplied before the given arguments. Returns ~x~. E.g.:
+  ~(doto (new java.util.HashMap) (.put "a" 1) (.put "b" 2))~
+
+
+* Namespaces
+
+- Important namespaces: clojure.core, clojure.repl
+- Require functions that can be referred to unqualified:
+  ~(ns ns-name (:require [my.namespace :refer [compute other-fn]]))~
+- Force loading of all identified libs even if already loaded:
+  ~(require '[learn-cljs.import-fns.format :as fmt] :reload)~
+- Instruct REPL to operate in namespace:
+  ~(in-ns 'learn-cljs.import-fns.format)~
+- Current namespace: ~*ns*~
+- Remove mapping for symbol from namespace:
+  ~(ns-unmap 'user 'base-config)~ or ~(ns-unmap *ns* 'base-config)~
+- Unalias namespace: ~(ns-unalias *ns* 'm)~
+- Refresh all namespaces:
+  #+begin_src clojure
+  (require '[clojure.tools.namespace.repl :refer [refresh]])
+  (refresh)
+  #+end_src
+
+** Dependencies
+
+- require vs. use vs. import:
+  - require: load Clojure library
+  - use: same as require, and additionally refers to loaded definitions from current ns
+  - import: for Java classes and interfaces only, e.g.
+  #+begin_src clojure
+  (import java.util.Date)
+  (def *now* (Date.))
+  ;; import multiple classes in a namespace
+  (ns wanderung.datascript
+    (:require [wanderung.core :as w :refer [create-source]])
+    (:import [wanderung.core IConnection IExtract])
+  #+end_src
+
+- How to use local dependencies
+  - In dependency folder, run $ mvn install
+  OR
+  - [[https://github.com/technomancy/leiningen/blob/master/doc/TUTORIAL.md#checkout-dependencies][Leiningen checkout dependencies]]
+    Update local dependencies without running ~lein install~ and restarting REPL every time a change is made
+
+
+* Java interop
+
+#+begin_src clojure
+(.toUpperCase "fred")
+;; => "FRED"
+(.getName String)   ; Note: .getName invoked on java.lang.Class
+;; => "java.lang.String"
+(. java.time.Instant now)
+;; => #object[java.time.Instant 0xbc379f "2023-05-12T03:54:22.697416Z"]
+(.-x (java.awt.Point. 1 2))
+;; => 1
+(java.lang.Class/forName "Fully.Qualified.Class.Name")
+#+end_src
+
+
+* Abstractions
+
+** Multimethods
+#+begin_src clojure
+(defmulti do-math (fn [operation x y] operation))
+(defmethod do-math :add [_ x y] (+ x y))
+(defmethod do-math :subtract [_ x y] (+ x y))
+(do-math :add 1 2)
+#+end_src
+
+** Objects
+- Where required: ~(require '[clojure.reflect :refer [reflect]])~
+- Show methods (and other information) for an object: ~(reflect some-obj)~
+  Note that only methods directly defined on the object's class are listed.
+- Show methods (including those inherited) on an object's class:
+  ~(.getMethods (.getClass (tc/rows some-obj :as-maps)))~
+
+** Protocols
+
+** Polymorphism
+
+- Get supertypes (both classes and interfaces) of a given type, e.g.
+  ~(supers clojure.lang.PersistentList$EmptyList)~
+  ~(supers clojure.lang.PersistentList)~
+- Test whether ~x~ is an instance of class ~c~: ~(instance? c x)~
+- More general than ~instance?~: ~(isa? child parent)~ or ~(isa? hierarchy child parent)~
+  - Allows relationship established via ~derive~ as well as Java type inheritance
+- ~derive~: ~(derive tag parent)~ or ~(derive hierarchy tag parent)~
+  where ~parent~ must be a namespace-qualified symbol or keyword; ~child~ can be those or a class.
+  E.g.: ~(derive ::milk  ::dairy)~
+- More general version of ~supers~: ~parents~, which returns ~derive~ relationships as well
+- Analogue of ~parents~: ~descendants~
+
+
+* State
+- Set validator on atom creation, e.g.:
+~(atom init-val 0 :validator validator-fn)~
+~(atom init-val {:a 1} :validator validator-fn)~
+
+
+* IO
+- Reading and writing line by line:
+  #+begin_src clojure
+  (with-open [rdr (io/reader (io/file data-dir "agencies.csv"))
+              w (io/writer (io/file data-dir "agencies-cp.csv") :append true)]
+    (let [rows (line-seq rdr)
+          header (->> (string/split (first rows) #",")
+                      (map #(str "agency/" %))
+                      (string/join ","))]
+      (.write w (str header "\n"))
+      (doseq [row (rest rows)]
+        (.write w (str row "\n")))))
+  #+end_src
+- Read EDN file: ~(clojure.edn/read (java.io.PushbackReader. (io/reader "test.edn")))~
+
+
+* Vars and global environment
+- Temporarily redefine var (function in this example):
+#+begin_src clojure
+(alter-var-root #'datahike.api/connect
+                (fn [f] (fn [& args] (println "instrumented") (apply f args))))
+#+end_src
+
+
+* Testing
+#+begin_src clojure
+(require '[clojure.test :refer [run-tests test-vars]])
+(require 'foo.bar-test :reload-all)
+; for good measure
+(dir foo.bar-test)
+(meta #'foo.bar-test/test1)
+; run all tests
+(run-tests 'foo.bar-test)
+; run one test
+(test-vars [#'foo.bar-test/test2])
+#+end_src
+
+** Kaocha
+~bin/kaocha --focus test.ns~
+~bin/kaocha --fail-fast~
+~bin/kaocha --no-capture-output~
+~bin/kaocha --skip test.ns1 --skip test.ns2~
+
+
+* Builds and dependencies
+- Dependency jars stored under ~/.m2
+- Show contents of jar: ~jar tf jar-file~
+
+
+* Performance
+- Benchmarking:
+  - Quick benchmark with printed performance summary
+    #+begin_src python
+    (criterium/with-progress-reporting
+     (criterium/quick-bench (nth ^longs (into [] (range 10000)) 0)))
+    #+end_src
+    - ~quick-benchmark~ or ~benchmark~ to record results
+- Profiling: VisualVM sampler tab
+- Type hinting:
+  - For arrays, e.g.:
+    - ~(alength ^longs arr)~ and ~(alength ^"[J" arr)~
+    - ~(aget ^"[Ljava.lang.Object;" objs-1 0)~
+    where ~arr~ is an array of longs and
+    #+begin_src python
+    (type (long-array 5))
+    ;; => [J
+    (type (object-array 5))
+    ;; => [Ljava.lang.Object;
+    (type ints-1)
+    ;; => [I
+    (aset ints-2 0 (aget ^"[I" ints-1 0))
+    #+end_src
+  - In threading macro, just put parenthese around hinted expression:
+    #+begin_src clojure
+    (fn [^java.nio.file.WatchEvent e]
+         (-> e ^java.nio.file.Path (.context) .toAbsolutePath))
+    #+end_src
+
+
+* Web
+** clj-http
+- debugging: add ~:debug true~ to request map
+
+
+* Docstrings
+- Backtick-quote function arguments and special keywords, e.g.
+  "Adds `x` to the transient collection"
+- Link to other functions, e.g. "See also \[\[listen!\]\]" (minus escape backslashes)
+- Include small examples, e.g. (showing only skeletal code snippet and omitting rest of docstring):
+  "```clojure
+  (def app ...)
+  ```"
+- Use tables to describe complex options maps:
+  | key          | description    |
+  |--------------|----------------|
+  | ...          | ...            |
+  | `:router`    | Function of ...|
