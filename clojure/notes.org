@@ -1,0 +1,348 @@
+#+TITLE: Notes
+
+
+* Special forms
+
+** ~do~: Evaluates expressions in order and returns value of the last
+
+- Necessary where its omission would result in attempted invocation of expression that isn't function, e.g.
+  #+begin_src clojure
+  (map #(do (println "x: " %) %) '(0 1))
+
+  ;; note that it's safe with if and else clauses swapped since else isn't evaluated
+  (if (> 2 1)
+    ((println "next")
+     (str "ret" 1))
+    (println "sthg"))
+
+  ;; Evaluates to nil
+  (do (time (range 10)) nil)
+  #+end_src
+
+- Not necessary in e.g. ~let~ and ~fn~ (and ~defn~) that won't result in illegal attempted invocation, and apparently have an implicit ~do~:
+#+begin_src clojure
+(let []
+  (println "sthg")
+  (println "next"))
+((fn []
+   (println "sthg")
+   (println "next")
+   (str "ret" 1)))
+#+end_src
+
+
+* Laziness
+
+- Note that lazy expressions can seem otherwise in ~comment~ block or in REPL because they are consumed by REPL
+  #+begin_src clojure
+  ;; In code: lazy sequence. If consumed by REPL: Prints 1 to 100; evals to sequence of 100 nils.
+  (map println (range 100))
+  ;; Prints 0 to 31 (or other) from evaluation of a single chunk; evals to nil (println value).
+  (nth (map println (range 100)) 1)
+  #+end_src
+
+- Gotchas: see [[https://stackoverflow.com/questions/39957310/map-not-quite-lazy][implementation details underlying the difference on StackOverflow]]
+  #+begin_src clojure
+  ;; (All the following evaluate to 0)
+  ;; prints 0 to 31
+  (first (map #(do (println "x: " %) %) (range 40)))
+  (first (map #(do (println "x: " %) %) (vec (range 40))))
+  (first (map #(do (println "x: " %) %) (doall (range 40))))
+  ;; prints 0
+  (first (map #(do (println "x: " %) %) (apply list (range 40))))
+  #+end_src
+
+
+* Gotchas
+
+- nil can be assoc'ed to!
+  #+begin_src clojure
+  (assoc nil 1 :a)
+  ;; => {1 :a}
+  (map? nil)
+  ;; => false
+  #+end_src
+
+
+* Transducers
+Source: https://dev.solita.fi/2021/10/14/grokking-clojure-transducers.html
+In essence, a *transducer* is a function that takes a reducing function (like ~conj~) and returns a new reducing function.
+
+** Illustration via contrived example
+#+begin_src clojure
+(defn mapping
+  "Given function f, return a transducer that calls f on every input it receives."
+  [f]
+  (fn [rf]
+    (fn [result input]
+      (rf result (f input)))))
+
+(reduce
+  ((mapping inc) +)
+  0
+  [1 2 3 4 5])
+;;=> 20
+
+(defn filtering
+  "Given a predicate function pred, return a transducer that only retains items
+  for which pred returns true."
+  [pred]
+  (fn [rf]
+    (fn [result input]
+      (if (pred input)
+        (rf result input)
+        result))))
+
+(def rf
+  "A reducing function that filters even numbers, increments every remaining
+  number, then conjoins them into the result."
+  ((comp (filtering even?) (mapping inc)) conj))
+
+(reduce rf [] [1 2 3 4 5])
+;;=> [3 5]
+#+end_src
+
+- Why is the order of composed transducers the opposite of composed regular functions?
+  #+begin_src clojure
+  ((comp (filtering even?) (mapping inc)) conj)
+  ;;=>
+  ((filtering even?) ((mapping inc) conj))
+  ;;=>
+  (fn [result input]
+    (if (even? input)
+      (((mapping inc) conj) result input)
+      result))
+  #+end_src
+
+** Off-the-shelf transducers
+
+- ~halt-when~: ~(halt-when pred)~ or ~(halt-when pred retf)~
+Returns a transducer that ends transduction when ~pred~ returns ~true~ for an input. When supplied, ~retf~ must be a fn of 2 arguments taking the (completed) result so far and the input that triggered the predicate, and its return value
+will be the transducer's return value. E.g.
+#+begin_src clojure
+(def letters (set "abcdefghijklmnopqrstuvwxyz"))
+(def vowels (set "aeiou"))
+(transduce (comp (remove vowels) (halt-when (complement letters)))
+           str "hello world")
+;;=> \space
+
+(def v (vec (concat (range 5) [:x])))
+(def xf (comp (take 10) (halt-when keyword?) (map inc)))
+(transduce xf conj [] v)
+;;=> :x
+(into [] xf v)
+;;=> :x
+;; Doesn't work with sequence for some reason!
+(sequence xf v)
+;;=> (1 2 3 4 5)
+#+end_src
+
+** Actual usage
+
+There are four functions in the Clojure core that take transducers as arguments:
+- transduce
+- into
+- sequence
+- eduction
+
+*** transduce
+- like ~reduce~, but specifically for transducers. ~reduce~ with ~rf~ above would be written like so:
+  #+begin_src clojure
+  (transduce
+    (comp (filter even?) (map inc))
+    conj
+    []
+    [1 2 3 4 5])
+  #+end_src
+
+*** into
+- Use ~into~ to transform the input collection into a certain type of output collection as fast as possible, e.g.
+  #+begin_src clojure
+  (into #{}
+        (comp
+         (take 1000000)
+         (remove odd?)
+         (map #(* % 10)))
+        (repeatedly #(rand-int 100)))
+  #+end_src
+
+*** sequence
+- Use ~sequence~ whenever you need your transformation to produce a lazy sequence, e.g. when the result is needed more than once:
+  #+begin_src clojure
+  (def xs
+    (sequence
+      (comp (filter even?) (map inc))
+      (range 100)))
+
+  (take 10 xs)
+  ;; values already transformed and cached when this is called:
+  (take 5 xs)
+  #+end_src
+- Since most transformations that use the thread-last macro yield a lazy sequence, ~sequence~ might be the most straightforward option for refactoring a thread-last macro transformation into a transducer-powered one.
+
+*** eduction
+- In a nutshell, if ~sequence~ is for when you want caching (to reuse the transformation result), ~eduction~ is for when you don’t, e.g. when transforming data that you’re reading from an external resource, such as a file.
+
+  Might also be the right choice if you know you’re going to consume all of the final result, and you’re only going to do it once. There is some overhead to making a lazy sequence, and ~eduction~ allows you to avoid it when necessary. (Bear in mind that iIn most cases, the cost of lazy sequences is negligible.)
+
+  The difference between ~sequence~ and ~eduction~:
+  #+begin_src clojure
+  (def xs1
+    (sequence
+      (map #(do (prn "sequencing!") (inc %)))
+      (range 32))) ;; prints "sequencing!"
+
+  (prn xs1) ;; prints "sequencing!"
+  (prn xs1) ;; doesn't print "sequencing!"
+
+  (def xs2
+    (eduction
+      (map #(do (prn "educing!") (inc %)))
+      (range 32))) ;; doesn't print "educing!"
+
+  (prn xs2) ;; prints "educing!"
+  (prn xs2) ;; prints "educing!"
+  #+end_src
+
+  ~eduction~ consumes the input sequence only when we reference xs2, and does so every time we do it
+
+  It lets you bundle just the input collection and the transformation and defer the decision on which reducing function and initial value to use, e.g.:
+  #+begin_src clojure
+  ;; Create a transformation that filters the even numbers between 0 and 99 and increments the remaining numbers.
+  ;; Don't transform anything just yet, though.
+  (def xf
+    (eduction
+      (comp (filter even?) (map inc))
+      (range 100)))
+
+  ;; Apply the eduction to sum the transformed numbers.
+  (reduce + 0 xf)
+  ;;=> 2500
+
+  ;; Apply the eduction to multiply each number by ten, then add them into a hash set.
+  (reduce (fn [s n] (conj s (* n 10))) #{} xf)
+  ;;=> #{950 530 410 970 70 430 370 110 ...}
+  #+end_src
+
+  Calling ~reduce~ on an eduction uses the transducer from the eduction to transform the reducing function given to ~reduce~. Only then does it carry out the transformation on the input collection that lives inside the eduction.
+
+
+
+* Abstractions
+
+** Protocols
+
+- Source: https://flexiana.com/2021/08/on-the-nature-of-clojure-protocols
+
+- What happens when you have ~defprotocol AProtocol~:
+  - a var ~AProtocol~ is ~defonce~-d in the namespace ("so the reloads don't happen": as in when the ns is reloaded?)
+  - a Clojure immutable map with protocol information will be constructed
+  - a Java interface with Protocol methods and their signatures will be dynamically generated and loaded into the classloader
+  - the protocol map mentioned above is ~alter-var-root~-ed to be the value of the ~AProtocol~ var
+
+#+begin_src clojure
+(defprotocol AProtocol
+  (afn [this a] "A function"))
+(type AProtocol)
+;; => clojure.lang.PersistentArrayMap
+#+end_src
+
+*** Extending a protocol
+- Each method brings its own issues! More below.
+
+**** Implementing the Java interface
+- I.e. ~defrecord~, ~deftype~, or ~reify~, specifying the protocol
+- Fast execution path
+- Caveat: On reload of ~defprotocol~ a new Java interface with name ~AProtocol~ is generated and loaded into the classloader. All existing objects that satisfy the protocol via interface implementation do so only for the old protocol, not the new. This can't be addressed for existing objects, but reloading the namespace with ~defrecord~ or ~deftype~ after reloading the namespace with ~defprotocol~ so it extends the new protocol prevents this problem for newly created ARecord objects.
+  - This doesn't apply when ~extend~ is used
+#+begin_src clojure
+(defrecord ARecord []
+  ex/AProtocol
+  (afn [this a] nil))
+#+end_src
+
+**** Extending
+- ~extend~, ~extend-type~, or ~extend-protocol~: adds the implementing type to the :impls key of the Protocol map.
+- Slower than interface implementation, but can be done on already-defined types.
+- Caveat: closing over a Protocol value excludes any subsequent protocol extensions, because the Protocol value is an immutable map.
+#+begin_src clojure
+(def is-aprotocol? (partial satisfies? AProtocol))
+
+(extend-protocol AProtocol
+  String
+  (afn [this a] nil))
+
+(:impls AProtocol)
+;; =>
+{java.lang.String {:afn ...}}
+(satisfies? AProtocol "X")
+;; => true
+(is-aprotocol? "X")
+;; => false
+#+end_src
+
+**** Extend via metadata
+- Caveat: doesn't actually satisfy the protocol
+#+begin_src clojure
+(defprotocol AProtocol
+  :extend-via-metadata true
+  (afn [this a] "A function"))
+
+(def impl ^{`afn (fn [this a] nil)} [])
+
+;; functions work
+(afn ^{`afn (fn [this a] nil)} [] 1)
+;; => nil
+;; but satisfies? doesn't
+(satisfies? AProtocol impl)
+;; => false
+#+end_src
+
+*** Miscellaneous tip
+If you’re having issues with mysterious exceptions about objects not satisfying protocols you expect them to, remove AOT compiled class files from your classpath (e.g. in the ~target~ folder) and try again.
+
+
+* Performance
+
+** Mutability
+- ~deftype~ options for mutable fields: ~volatile-mutable~ and ~unsynchronized-mutable~
+  - ~volatile-mutable~: field will be marked as volatile, which in Java means the variable is stored in main memory, not in the CPU cache. This provides a data consistency guarantee that all threads will observe the updated value immediately.
+    - used "when the field is going to be written to by one thread and read from multiple threads": not multi-threaded contexts on general???
+  - ~unsynchronized-mutable~: backed by a regular Java mutable field, and may be stored in the CPU cache.
+    - for use in single-threaded contexts.
+
+** Collections
+Based on some rough benchmarking:
+- ~(coll k)~ vs ~(get coll k)~
+  - dead even for maps
+  - ~(coll k)~ has a clear advantage on sets: ~get~ takes 1.3 to over 1.5 times as long
+- ~(coll k)~ vs ~(get coll k)~ vs ~(nth coll k)~
+  - ~nth~ clear winner over ~get~ on strings
+  - performance differences unclear on vectors, though ~nth~ seems very consistent and possibly the fastest
+- ~(coll k)~ and ~(k coll)~ are dead even
+
+** Equality
+- ~identical?~ seems to have a razor-thin edge over ~.equals~, which again seems to have a small edge over ~=~
+
+
+* Macro scrap heap
+
+- Second line works: correctly expanded and evaluated at runtime. First doesn't because map is applied to its last, quoted i.e. literal expression, whereas the values resulting from expanding it are needed instead--and that information isn't available at compile(?) time.
+#+begin_src clojure
+(defmacro unwrap-refs-test-macro [e ref-attrs]
+  (->> (map (fn [k] `(update ~k :db/id)) `(rest ~ref-attrs))
+       (cons `(update ~'e (first ~ref-attrs) :db/id))
+       (cons '->)))
+(defn unwrap-refs [e ref-attrs]
+  (unwrap-refs-test-macro e ref-attrs))
+#+end_src
+
+- The converse, a macro calling a function: Don't quite recall what goes wrong, but presumably compile-time resolution is attemped and fails?
+#+begin_src clojure
+(defn unwrap-refs-fn [e ref-attrs]
+  (->> (map (fn [k] `(update ~k :db/id)) (vec (rest ref-attrs)))
+       (cons `(update ~e ~(first ref-attrs) :db/id))
+       (cons '->)))
+(defmacro unwrap-refs [e ref-attrs]
+  (unwrap-refs-fn @(resolve e) @(resolve ref-attrs)))
+#+end_src
