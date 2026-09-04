@@ -95,6 +95,14 @@ rebase a topic branch based on one branch to another (specify topic if not on br
 Show all differences between master & branch - everything on each that isn't on the other:
 ~git diff [--stat] master branch~
 
+Show which commits added certain files and when:
+~git log --diff-filter=A --format="%h %as %s" -- 'yobst/*/README.rst'~
+- ~--diff-filter=A~ limits the log to commits where the file was added (first appeared)
+  - Other values: ~M~ modified, ~D~ deleted, ~R~ renamed, ~C~ copied
+- ~%as~ in ~--format~: author date in short format (YYYY-MM-DD)
+  - For full author date: ~%ad~ (respects ~--date=~ flag)
+  - ~%cs~: committer date short — different when a commit is cherry-picked or rebased
+
 Show changes in branch from master since the common commit they diverged from - only what's on branch that isn't on master:
 ~git diff [--stat] 8d585ea branch~
 
@@ -138,14 +146,8 @@ or:
 Sort of equivalent to - git show SHA:
 ~git log -p~
 
-Show commit history of file:
-~git log -- file~
-
-Show file history, using patches (-p) and showing only commits that are enough to explain how the file came to be (--):
-~git log -p -- file~
-
-Concise version of -p, showing additions & deletions:
-~git log --stat~
+Summarise differences between two branches (here local and remote)
+~git log --oneline main..origin/main~
 
 Show history:
 ~git log --graph --oneline --decorate --all~
@@ -183,13 +185,6 @@ Show commit that's grandparent of HEAD
 Show commit that's great-grandparent of HEAD
 ~git show HEAD~3~
 
-Show version of file at specific commit
-~git show REVISION:path/to/file~
-
-Search commits on all branches for file:
-~git log --all -- <path>~
-where, e.g. path = app/views/terms/edit.js.erb
-
 To find all commits where number of occurrences of "word" changed in file contents:
 ~git log -Sword~
 
@@ -208,15 +203,36 @@ Limit the commits output to ones with log message that matches the specified pat
 Show commits on date(s):
 ~git log --after="2016-04-04" --before="2016-04-08"~
 
-Display version of file at particular commit:
-~git show <SHA> -- <path-to-file>~
-
 Show all commits, even those no longer accessible directly on branches:
 #+begin_src shell
 git reflog
 # or
 git log -g
 #+end_src
+
+** File-specific
+
+Show commit history of file:
+~git log -- file~
+
+Show file history, using patches (-p) and showing only commits that are enough to explain how the file came to be (--):
+~git log -p -- file~
+
+Concise version of -p, showing additions & deletions:
+~git log --stat~
+
+Show version of file at specific commit
+~git show REVISION:path/to/file~
+
+Show changes to specific file in commit (omit commit hash for commit preceding current HEAD):
+~git show [--stat] <commit-hash> -- path/to/file~
+
+Display version of file at particular commit:
+~git show <SHA> -- <path-to-file>~
+
+Search commits on all branches for file:
+~git log --all -- <path>~
+where, e.g. path = app/views/terms/edit.js.erb
 
 
 * Time Travel
@@ -229,6 +245,12 @@ Reset file to particular commit:
 
 Undo commit while retaining subsequent ones, but keep in log the revert (undoing):
 ~git revert --strategy resolve <commit>~
+
+Revert file to a specific version (e.g. to revert changes to it in a specific commit):
+git checkout <commit-hash> -- path/to/file
+
+Rewrite local branch contents with remote:
+~git reset --hard origin/<branch>~
 
 
 * Checking Out
@@ -265,27 +287,20 @@ Push all commits up to and including chosen commit to remote:
 
 * Branching
 
+** Inspect
+
 Show branches (-r for remote):
 ~git branch [-r]~
 
 Ordered by most recent commit:
 ~git for-each-ref --sort=-committerdate refs/heads/~
 
-Rename branch:
-- On current branch:
-  ~git br -m <newname>~
-
-- From another branch:
-  ~git br -m oldbranch newbranch~
+** Create
 
 Create a remote-tracking branch:
-~git checkout -b [branch] [remotename]/[branch]~
-
+~git checkout [branch]~
 Shorthand for previous:
 ~git checkout --track origin/branch~
-
-Track a remote branch with an existing local branch:
-~git br -u origin/branch~
 
 Create a new remote branch:
 #+begin_src shell
@@ -299,14 +314,36 @@ git br remote_branch_name origin/remote_branch_name
 git co remote_branch_name
 #+end_src
 
-Delete a branch:
-~git br -d <branch>~
+** Change
+
+Rename branch
+- On current branch:
+  ~git br -m <newname>~
+- From another branch:
+  ~git br -m oldbranch newbranch~
+
+Track a remote branch with an existing local branch:
+~git br -u origin/branch~
+
+What exactly?
+~git co main~
+~git mg origin/main~
+
+Overwrite local branch with remote:
+~git reset --hard origin/branch-name~
 
 Delete oldname remote branch and push newname local branch:
 ~git push origin :oldname newname~
 
+** Remove
+
+Delete a branch:
+~git br -d <branch>~
+
 
 * Fetching
+
+~git fetch [remote]~
 
 ~git fetch [remote] [repo/branch]~
 
@@ -314,30 +351,37 @@ Delete oldname remote branch and push newname local branch:
 
 ~git fetch --dry-run~
 
-~git fetch origin~
-
-~git log --oneline main..origin/main~
-
-~git co main~
-
-~git mg origin/main~
-
 
 * Stashing
 
-Stash only a single file:
-~git stash -- file~
+** Viewing
 
 ~git stash list~
 
+Show stash contents:
+~git stash show -p <stash-name>~
+
+** Applying
 ~git stash apply [stash-name]~
+
+Stash only a single file:
+~git stash -- file~
+Unstash only a single file:
+~git checkout stash@{0} -- path/to/file~
+
+Apply stashed changes only:
+#+begin_src bash
+git checkout -- path/to/file  # restore the pre-stash version
+git stash show -p | git apply --3way  # reapply stash changes only
+#+end_src
+Apply file exactly as in stash:
+~git show stash@{0}:path/to/file > path/to/file~
+
+** Removing items
 
 Apply only tries to apply the stashed work — you continue to have it on your stack.
 To remove, git stash drop with the name of the stash to remove:
 ~git stash drop <stash-name>~
-
-Show stash contents:
-~git stash show -p <stash-name>~
 
 Clear stash:
 ~git stash clear~
@@ -403,16 +447,6 @@ git reset --hard remote/branch
 #+end_src
 
 
-* Help
-#+begin_src shell
-git help <verb>
-# or
-git <verb> --help
-# or
-man git-<verb>
-#+end_src
-
-
 * Remotes
 
 View existing remotes (-v shows URLs used for fetch and push)
@@ -437,6 +471,110 @@ Prune all stale tracking branches:
 ~git remote prune origin~
 
 
+* Submodules
+
+** Background
+A main repo tracks submodules by storing which commit each submodule should be at. By default, pulling the main repo updates these references /without updating the actual submodule contents/. When this happens:
+- In the main repo, Git shows ~modified: submodule-name (new commits)~
+  - Note: This is indeed semantically inconsistent with the meaning of "modified" for regular files.
+- In the submodule folder, Git status looks clean because the submodule itself is at a valid commit, just not the one the parent repo expects.
+
+
+** Adding
+- Adding a submodule:
+  ~git submodule add <repository-url> <path>~
+  - Adds a new repository as a submodule at the specified path
+  - Creates a .gitmodules file to track submodule configuration
+
+
+** Cloning a repo with submodules
+- Cloning a repo with submodules:
+  ~git clone --recurse-submodules <repository-url>~
+
+
+** ~git submodule update~
+- Checks out the exact commit of each submodule that's recorded in the parent repository
+  - I.e. adjusts the working directory of each submodule to match the commit that the parent repository is pointing to
+- Leaves the submodules in a "detached HEAD" state (not on any branch)
+- Usually run after ~git submodule init~
+
+*** ~--remote~
+- Instead of the commit recorded in the parent repo, it fetches from the submodule's remote repository
+- Updates each submodule to the latest commit on the tracking branch of the submodule
+- Also updates the reference in the parent repo to point to this new commit
+
+*** ~--recursive~
+- Updates actual contents of submodules (and any nested submodules) to match the references held by the parent repo
+  - This doesn't seem to be true???
+
+*** ~--init~
+- Ensures that any submodules that haven't been initialized yet will be initialized before updating
+
+*** ~--merge~
+- Preserve local modifications
+
+*** In other words
+- Updates parent repo's submodule commit references as well as actual submodule folder contents:
+  ~git submodule update --init --recursive~
+  - Initialises submodules in repo cloned without its submodules
+
+**** A robust, recommended approach
+#+begin_src shell
+# From the parent repo root
+# First reset the submodule reference to match what parent expects
+git submodule update --init path/to/submodule
+# Then go into the submodule
+cd path/to/submodule
+# Get on a real branch
+git checkout main
+# Pull latest changes
+git pull origin main
+# Go back to parent
+cd ../..
+# Now parent repo knows the submodule is modified
+git status
+# Commit this change to update the parent's reference
+git add path/to/submodule
+git commit -m "Update submodule to latest main"
+#+end_src
+
+
+** Committing submodule changes
+- Submodules are tracked by a specific commit hash in the parent repository
+- After making changes in a submodule:
+  #+begin_src shell
+  cd <submodule>
+  git add <changes>
+  git commit -m "message"
+  # optional
+  git push origin your-branch
+  #+end_src
+- Update parent repo to track new commit:
+  - Necessary because submodules are tracked by commit hashes, not branches
+  #+begin_src shell
+  # optional: use when subrepo changes were pushed
+  git submodule update --remote <submodule-path>
+  git add <submodule-path>
+  git commit -m "Updated submodule to new commit"
+  #+end_src
+
+
+** Removing a submodule
+#+begin_src shell
+git submodule deinit -f <path-to-submodule>
+git rm -f <path-to-submodule>
+rm -rf .git/modules/<path-to-submodule>
+#+end_src
+
+
+** Common commands
+- List submodules with the commit each is pinned to by the parent: ~git submodule status~
+- For a specific submodule, show commit it's pinned to by the parent ~git ls-tree HEAD <submodule-name>~
+- Sync submodules: ~git submodule sync --recursive~
+- Initialize submodules: ~git submodule init [<submodule1> ...]~
+  - Initialises local config file with information on submodules of interest
+
+
 * GitHub
 
 Set up new repo:
@@ -449,6 +587,16 @@ git ci -m "first commit"
 git remote add origin <remote-repo-url>
 git remote -v
 git push -u origin master
+#+end_src
+
+
+* Help
+#+begin_src shell
+git help <verb>
+# or
+git <verb> --help
+# or
+man git-<verb>
 #+end_src
 
 
@@ -475,3 +623,4 @@ Or, better yet(?), apply the stash from the hash value:
 * Utils
 Get the current commit (I can't parse this ~rev-parse~ documentation; "porcelainish"... what the fuck is that???)
 ~git rev-parse --short HEAD~
+
